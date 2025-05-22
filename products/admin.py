@@ -4,16 +4,17 @@ from .models import Product, ProductCategory, ProductImage
 from unfold.admin import ModelAdmin
 from tinymce.widgets import TinyMCE
 
-    
+
 class ProductCategoryAdmin(ModelAdmin):
     list_display = ('name', 'description')
     search_fields = ('name',)
 
+
 class ProductImageInline(admin.TabularInline):
     model = ProductImage
     extra = 1
-    tab=True
-   
+    tab = True
+
 
 class ProductAdmin(ModelAdmin):
     list_display = ('name', 'category', 'price', 'stock', 'is_active')
@@ -25,6 +26,7 @@ class ProductAdmin(ModelAdmin):
     formfield_overrides = {
         models.TextField: {'widget': TinyMCE()},
     }
+
 
 admin.site.register(Product, ProductAdmin)
 admin.site.register(ProductCategory, ProductCategoryAdmin)

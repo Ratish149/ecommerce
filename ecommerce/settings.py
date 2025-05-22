@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-%45l42w8-2tc)th^i8%&=f$^ciw^heg&60jp=e0(-uyd*(8jnl
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -40,16 +40,16 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
+    'corsheaders',
     'accounts',
     'tinymce',
     'products',
-    
-
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -75,6 +75,19 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'ecommerce.wsgi.application'
+
+# CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+
+
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:3000',
+    'https://f6ae-203-9-210-17.ngrok-free.app'
+]
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:3000',
+    'https://f6ae-203-9-210-17.ngrok-free.app'
+]
 
 
 # Database
