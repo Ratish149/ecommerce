@@ -9,13 +9,22 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class ProductImageSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+
     class Meta:
         model = ProductImage
         fields = '__all__'
 
+    def get_image(self, obj):
+        request = self.context.get('request')
+        if request and request.method == 'GET':
+            return f'/media/{obj.image.name}'
+        return obj.image.url if obj.image else None
+
 
 class ProductSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, read_only=True)
+    category = CategorySerializer(read_only=True)
 
     class Meta:
         model = Product
@@ -32,6 +41,7 @@ class ProductSerializer(serializers.ModelSerializer):
 
 
 class ProductDetailSerializer(serializers.ModelSerializer):
+
     images = ProductImageSerializer(many=True, read_only=True)
 
     class Meta:

@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites',  # Required for allauth
-
+    'django_filters',
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework.authtoken',
@@ -106,12 +106,12 @@ CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
-    'https://f6ae-203-9-210-17.ngrok-free.app',
+    'https://307c-111-119-49-110.ngrok-free.app',
     'https://b7bwr4s3-8000.inc1.devtunnels.ms'
 ]
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000',
-    'https://f6ae-203-9-210-17.ngrok-free.app',
+    'https://307c-111-119-49-110.ngrok-free.app',
     'https://b7bwr4s3-8000.inc1.devtunnels.ms'
 ]
 
