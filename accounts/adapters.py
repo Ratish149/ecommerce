@@ -8,6 +8,9 @@ from allauth.account.models import EmailAddress
 from allauth.utils import valid_email_or_none
 from django.contrib.auth.models import Group
 from datetime import datetime
+from django.contrib.sites.shortcuts import get_current_site
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
 
 
 class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
@@ -30,7 +33,6 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         email = data.get("email")
         name = data.get("name")
         username = data.get("username")
-        dateofbirth = data.get("dateofbirth")
         phone = data.get("phone")
         address = data.get("address")
 
@@ -40,13 +42,6 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         name_parts = (name or "").partition(" ")
         user_field(user, "first_name", first_name or name_parts[0])
         user_field(user, "last_name", last_name or name_parts[2])
-
-        if dateofbirth:
-            try:
-                dateofbirth = datetime.strptime(dateofbirth, "%Y-%m-%d").date()
-                user_field(user, "dateofbirth", dateofbirth)
-            except (ValueError, TypeError):
-                pass
 
         if phone:
             user_field(user, "phone", phone)
@@ -85,7 +80,6 @@ class CustomHeadlessAdapter(DefaultHeadlessAdapter):
             refresh['first_name'] = user.first_name
             refresh['last_name'] = user.last_name
             refresh['phone'] = user.phone
-            refresh['dateofbirth'] = user.dateofbirth
             refresh['address'] = user.address
             ret["access_token"] = str(refresh.access_token)
             ret["refresh_token"] = str(refresh)
@@ -116,7 +110,6 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         last_name = data.get("last_name", "")
         phone = data.get("phone", "")
         address = data.get("address", "")
-        dateofbirth = data.get("dateofbirth")
         email = data.get("email")
         # Use email as username if not provided
         username = data.get("username", email)
@@ -130,12 +123,6 @@ class CustomAccountAdapter(DefaultAccountAdapter):
             user_field(user, "phone", phone)
         if address:
             user_field(user, "address", address)
-        if dateofbirth:
-            try:
-                dateofbirth = datetime.strptime(dateofbirth, "%Y-%m-%d").date()
-                user_field(user, "dateofbirth", dateofbirth)
-            except (ValueError, TypeError):
-                pass
 
         if "password1" in data:
             user.set_password(data["password1"])
@@ -151,5 +138,22 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         return user
 
     def send_confirmation_mail(self, request, emailconfirmation, signup):
-        # This should be automatically handled unless overridden
-        super().send_confirmation_mail(request, emailconfirmation, signup)
+        current_site = get_current_site(request)
+        activate_url = self.get_email_confirmation_url(
+            request, emailconfirmation)
+        ctx = {
+            "user": emailconfirmation.email_address.user,
+            "activate_url": activate_url,
+            "current_site": current_site,
+            "key": emailconfirmation.key,
+        }
+        subject = render_to_string(
+            'account/email/email_confirmation_message_subject.txt', ctx).strip()
+        text_body = render_to_string(
+            'account/email/email_confirmation_message_message.txt', ctx)
+        html_body = render_to_string(
+            'account/email/email_confirmation_message.html', ctx)
+        msg = EmailMultiAlternatives(subject, text_body, None, [
+                                     emailconfirmation.email_address.email])
+        msg.attach_alternative(html_body, "text/html")
+        msg.send()

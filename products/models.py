@@ -19,6 +19,7 @@ class ProductCategory(models.Model):
 class ProductImage(models.Model):
     name = models.CharField(max_length=100, blank=True, null=True)
     image = models.FileField(upload_to='products/')
+    image_alt_description = models.TextField(blank=True, null=True)
     product = models.ForeignKey(
         'Product', related_name='images', on_delete=models.CASCADE)
 
@@ -33,6 +34,8 @@ class Product(models.Model):
     market_price = models.DecimalField(max_digits=10, decimal_places=2)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     stock = models.PositiveIntegerField()
+    thumbnail_image = models.FileField(
+        upload_to='products/thumbnails/', null=True, blank=True)
     category = models.ForeignKey(
         ProductCategory, related_name='products', on_delete=models.CASCADE)
     is_popular = models.BooleanField(default=False)

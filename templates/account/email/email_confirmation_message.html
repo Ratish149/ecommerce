@@ -1,0 +1,106 @@
+{% load account %}
+{% user_display user as user_display %}
+{% load i18n %}
+{% autoescape off %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% trans "Confirm Your Email" %}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #ffffff;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 2px solid #eee;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            color: #333;
+        }
+        .content {
+            padding: 0 10px;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        .link-box {
+            background-color: #f8f9fa;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            word-break: break-all;
+            font-size: 14px;
+            margin: 15px 0;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px 0;
+            margin-top: 30px;
+            border-top: 2px solid #eee;
+            color: #666;
+            font-size: 13px;
+        }
+        .important-note {
+            background-color: #f8f9fa;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 15px 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{% trans "Email Confirmation" %}</h1>
+        </div>
+        <div class="content">
+            <p>{% trans "Hello" %} {{ user_display }},</p>
+            
+            <p>{% trans "Please confirm your email address by clicking the button below:" %}</p>
+            
+            <div style="text-align: center;">
+                <a href="{{ activate_url }}" class="button">{% trans "Confirm Email" %}</a>
+            </div>
+            
+            <p>{% trans "If the button doesn't work, copy and paste this link:" %}</p>
+            <div class="link-box">{{ activate_url }}</div>
+            
+            <div class="important-note">
+                <p>{% trans "This link will expire in 24 hours." %}</p>
+            </div>
+            
+            <div class="important-note">
+                <p>{% trans "If you didn't create this account, please ignore this email." %}</p>
+            </div>
+        </div>
+        <div class="footer">
+            <p>{% trans "This is an automated message, please do not reply." %}</p>
+            <p>© {% now "Y" %} Nisimatsuya. {% trans "All rights reserved." %}</p>
+        </div>
+    </div>
+</body>
+</html>
+{% endautoescape %}

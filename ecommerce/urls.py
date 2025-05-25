@@ -5,9 +5,12 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-        # headless urls
+    # Allauth URLs
+    path('accounts/', include('allauth.account.urls')),
+    # Headless URLs
     path("_allauth/", include("allauth.headless.urls")),
     path('api/', include('products.urls')),
+    path('api/', include('accounts.urls')),
 ]
 
 if settings.DEBUG:

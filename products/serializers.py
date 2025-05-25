@@ -3,9 +3,16 @@ from .models import Product, ProductCategory, ProductImage
 
 
 class CategorySerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+
     class Meta:
         model = ProductCategory
         fields = '__all__'
+
+    def get_image(self, obj):
+        if obj.image:
+            return f'/media/{obj.image.name}'
+        return None
 
 
 class ProductImageSerializer(serializers.ModelSerializer):
@@ -25,6 +32,11 @@ class ProductImageSerializer(serializers.ModelSerializer):
 class ProductSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, read_only=True)
     category = CategorySerializer(read_only=True)
+    category_id = serializers.PrimaryKeyRelatedField(
+        queryset=ProductCategory.objects.all(),
+        write_only=True,
+        source='category'
+    )
 
     class Meta:
         model = Product

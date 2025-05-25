@@ -78,7 +78,7 @@ ROOT_URLCONF = 'ecommerce.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -106,13 +106,11 @@ CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
-    'https://307c-111-119-49-110.ngrok-free.app',
     'https://b7bwr4s3-8000.inc1.devtunnels.ms'
 ]
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000',
-    'https://307c-111-119-49-110.ngrok-free.app',
-    'https://b7bwr4s3-8000.inc1.devtunnels.ms'
+    'https://b7bwr4s3-8000.inc1.devtunnels.ms',
 ]
 
 
@@ -274,3 +272,12 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=100),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=100),
 }
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'sikchhu.baliyo@gmail.com'
+EMAIL_HOST_PASSWORD = 'hhdt gaun mdqz jfnn'
+
+DEFAULT_FROM_EMAIL = 'sikchhu.baliyo@gmail.com'
