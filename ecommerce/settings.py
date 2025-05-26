@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'corsheaders',
     'accounts',
+    'order',
     'tinymce',
     'products',
 ]

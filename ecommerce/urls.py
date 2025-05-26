@@ -11,6 +11,7 @@ urlpatterns = [
     path("_allauth/", include("allauth.headless.urls")),
     path('api/', include('products.urls')),
     path('api/', include('accounts.urls')),
+    path('api/', include('order.urls')),
 ]
 
 if settings.DEBUG:

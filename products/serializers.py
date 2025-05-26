@@ -37,10 +37,16 @@ class ProductSerializer(serializers.ModelSerializer):
         write_only=True,
         source='category'
     )
+    thumbnail_image = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = '__all__'
+
+    def get_thumbnail_image(self, obj):
+        if obj.thumbnail_image:
+            return f'/media/{obj.thumbnail_image.name}'
+        return None
 
     def create(self, validated_data):
         request = self.context.get('request')
@@ -59,3 +65,10 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = '__all__'
+
+
+class ProductSmallSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = ['id', 'name', 'slug', 'market_price',
+                  'price', 'thumbnail_image']
