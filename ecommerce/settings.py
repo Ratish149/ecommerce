@@ -212,12 +212,14 @@ TINYMCE_DEFAULT_CONFIG = {
 # Django Allauth settings
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1', 'first_name', 'last_name']
 ACCOUNT_UNIQUE_EMAIL = True
-ACCOUNT_LOGIN_METHODS = {'email'}
+ACCOUNT_LOGIN_METHODS = {'email', 'username'}
 # Skip verification for social accounts
 SOCIALACCOUNT_EMAIL_VERIFICATION = "none"
 # ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 # ACCOUNT_USERNAME_REQUIRED = False
-ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+ACCOUNT_EMAIL_VERIFICATION = "none"  # This is the key setting
+ACCOUNT_CONFIRM_EMAIL_ON_GET = False  # Don't require confirmation on GET
+
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 ACCOUNT_LOGOUT_ON_PASSWORD_CHANGE = False
 ACCOUNT_LOGOUT_REDIRECT_URL = '/'

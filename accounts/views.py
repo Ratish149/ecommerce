@@ -7,8 +7,27 @@ from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User
 from .serializers import LoginSerializer
+from allauth.account.models import EmailAddress
+from allauth.account.views import SignupView
 
 # Create your views here.
+
+
+class CustomSignupView(SignupView):
+    def perform_create(self, serializer):
+        user = serializer.save(self.request)
+        print(user)
+
+        # ✅ Manually verify and assign the email
+        EmailAddress.objects.create(
+            user=user,
+            email=user.email,
+            verified=True,
+            primary=True
+        )
+
+        # ✅ Return user directly — don’t call super().perform_create()
+        return user
 
 
 class LoginView(generics.GenericAPIView):

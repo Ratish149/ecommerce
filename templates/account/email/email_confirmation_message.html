@@ -10,64 +10,89 @@
     <title>{% trans "Confirm Your Email" %}</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
             line-height: 1.6;
             margin: 0;
-            padding: 20px;
-            background-color: #ffffff;
-            color: #333;
+            padding: 0;
+            background-color: #fafafa;
+            color: #2c3e50;
         }
         .container {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
+            max-width: 580px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
         .header {
             text-align: center;
-            padding: 20px 0;
-            border-bottom: 2px solid #eee;
-            margin-bottom: 30px;
+            padding: 32px 24px;
+            border-bottom: 1px solid #edf2f7;
         }
         .header h1 {
             margin: 0;
-            font-size: 24px;
-            color: #333;
+            font-size: 28px;
+            font-weight: 500;
+            color: #1a202c;
+            letter-spacing: -0.5px;
         }
         .content {
-            padding: 0 10px;
+            padding: 32px 40px;
+        }
+        .greeting {
+            font-size: 18px;
+            color: #2d3748;
+            margin-bottom: 24px;
+        }
+        .message {
+            color: #4a5568;
+            margin-bottom: 32px;
+        }
+        .button-container {
+            text-align: center;
+            margin: 32px 0;
         }
         .button {
             display: inline-block;
-            padding: 12px 24px;
-            background-color: #007bff;
+            padding: 14px 32px;
+            background-color: #3182ce;
             color: white;
             text-decoration: none;
-            border-radius: 4px;
-            margin: 20px 0;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 16px;
+            transition: background-color 0.2s;
         }
         .link-box {
-            background-color: #f8f9fa;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            background-color: #f7fafc;
+            padding: 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
             word-break: break-all;
             font-size: 14px;
-            margin: 15px 0;
+            color: #4a5568;
+            margin: 24px 0;
+            font-family: monospace;
+        }
+        .note {
+            background-color: #f7fafc;
+            padding: 16px;
+            border-radius: 6px;
+            margin: 16px 0;
+            font-size: 14px;
+            color: #4a5568;
+            border-left: 3px solid #3182ce;
         }
         .footer {
             text-align: center;
-            padding: 20px 0;
-            margin-top: 30px;
-            border-top: 2px solid #eee;
-            color: #666;
+            padding: 24px;
+            background-color: #f7fafc;
+            border-top: 1px solid #edf2f7;
+            color: #718096;
             font-size: 13px;
         }
-        .important-note {
-            background-color: #f8f9fa;
-            padding: 12px;
-            border-radius: 4px;
-            margin: 15px 0;
-            font-size: 14px;
+        .footer p {
+            margin: 4px 0;
         }
     </style>
 </head>
@@ -77,22 +102,22 @@
             <h1>{% trans "Email Confirmation" %}</h1>
         </div>
         <div class="content">
-            <p>{% trans "Hello" %} {{ user_display }},</p>
+            <p class="greeting">{% trans "Hello" %} {{ user_display }},</p>
             
-            <p>{% trans "Please confirm your email address by clicking the button below:" %}</p>
+            <p class="message">{% trans "Please confirm your email address by clicking the button below:" %}</p>
             
-            <div style="text-align: center;">
+            <div class="button-container">
                 <a href="{{ activate_url }}" class="button">{% trans "Confirm Email" %}</a>
             </div>
             
-            <p>{% trans "If the button doesn't work, copy and paste this link:" %}</p>
+            <p class="message">{% trans "If the button doesn't work, copy and paste this link:" %}</p>
             <div class="link-box">{{ activate_url }}</div>
             
-            <div class="important-note">
+            <div class="note">
                 <p>{% trans "This link will expire in 24 hours." %}</p>
             </div>
             
-            <div class="important-note">
+            <div class="note">
                 <p>{% trans "If you didn't create this account, please ignore this email." %}</p>
             </div>
         </div>
