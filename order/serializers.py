@@ -55,8 +55,31 @@ class OrderSerializer(serializers.ModelSerializer):
         return instance
 
 
+class OrderItemSmallSerializer(serializers.ModelSerializer):
+    product_id = serializers.CharField(source='product.id')
+    product_name = serializers.CharField(source='product.name')
+    product_slug = serializers.CharField(source='product.slug')
+    product_thumbnail_image = serializers.SerializerMethodField()
+    product_price = serializers.DecimalField(
+        source='product.price', max_digits=10, decimal_places=2)
+    total_price = serializers.SerializerMethodField()
+
+    class Meta:
+        model = OrderItem
+        fields = ['product_id', 'product_name', 'product_slug', 'product_thumbnail_image', 'product_price',
+                  'quantity', 'price', 'total_price']
+
+    def get_total_price(self, obj):
+        return obj.total_price
+
+    def get_product_thumbnail_image(self, obj):
+        if obj.product.thumbnail_image:
+            return f'/media/{obj.product.thumbnail_image.name}'
+        return None
+
+
 class OrderSmallSerializer(serializers.ModelSerializer):
-    items = OrderItemSerializer(many=True)
+    items = OrderItemSmallSerializer(many=True)
 
     class Meta:
         model = Order

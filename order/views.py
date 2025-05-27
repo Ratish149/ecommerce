@@ -4,6 +4,8 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from .models import Order
 from .serializers import OrderSerializer, OrderSmallSerializer
+from products.models import Product
+from django.db.models import Sum
 
 # Create your views here.
 
@@ -12,7 +14,7 @@ class OrderView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        orders = Order.objects.filter(user=request.user)
+        orders = Order.objects.all()
         serializer = OrderSmallSerializer(orders, many=True)
         return Response(serializer.data)
 
@@ -27,11 +29,10 @@ class OrderView(APIView):
 
 
 class OrderDetailView(APIView):
-    permission_classes = [IsAuthenticated]
 
     def get_object(self, order_number):
         try:
-            return Order.objects.get(order_number=order_number, user=self.request.user)
+            return Order.objects.get(order_number=order_number)
         except Order.DoesNotExist:
             return None
 
@@ -58,3 +59,39 @@ class OrderDetailView(APIView):
             return Response(status=status.HTTP_404_NOT_FOUND)
         order.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class DashboardStats(APIView):
+
+    def get(self, request):
+
+        # Get total products
+        total_products = Product.objects.count()
+
+        # Get total orders
+        total_orders = Order.objects.count()
+
+        # Get pending orders
+        pending_orders = Order.objects.filter(status='pending').count()
+
+        # Get total revenue (sum of total_amount from all orders)
+        total_revenue = Order.objects.aggregate(
+            total=Sum('total_amount'))['total'] or 0
+
+        stats = {
+            'total_products': total_products,
+            'total_orders': total_orders,
+            'pending_orders': pending_orders,
+            'total_revenue': float(total_revenue)
+        }
+
+        return Response(stats)
+
+
+class MyOrderView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        orders = Order.objects.filter(user=request.user)
+        serializer = OrderSmallSerializer(orders, many=True)
+        return Response(serializer.data)
