@@ -51,7 +51,16 @@ class ProductSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         request = self.context.get('request')
         images_data = request.FILES.getlist('images') if request else []
+        thumbnail_image = request.FILES.get(
+            'thumbnail_image') if request else None
+
+        # Create product with thumbnail image if provided
+        if thumbnail_image:
+            validated_data['thumbnail_image'] = thumbnail_image
+
         product = Product.objects.create(**validated_data)
+
+        # Create product images
         for image_file in images_data:
             ProductImage.objects.create(
                 product=product, image=image_file, name=image_file.name)
@@ -61,10 +70,18 @@ class ProductSerializer(serializers.ModelSerializer):
 class ProductDetailSerializer(serializers.ModelSerializer):
 
     images = ProductImageSerializer(many=True, read_only=True)
+    thumbnail_image = serializers.SerializerMethodField()
+    category=CategorySerializer()
+
 
     class Meta:
         model = Product
         fields = '__all__'
+
+    def get_thumbnail_image(self, obj):
+        if obj.thumbnail_image:
+            return f'/media/{obj.thumbnail_image.name}'
+        return None
 
 
 class ProductSmallSerializer(serializers.ModelSerializer):

@@ -34,6 +34,17 @@ class OrderSerializer(serializers.ModelSerializer):
         order = Order.objects.create(**validated_data)
 
         for item_data in items_data:
+            product = item_data['product']
+            quantity = item_data['quantity']
+
+            # Decrease product stock
+            if product.stock >= quantity:
+                product.stock -= quantity
+                product.save()
+            else:
+                raise serializers.ValidationError(
+                    f"Insufficient stock for product {product.name}")
+
             OrderItem.objects.create(order=order, **item_data)
 
         return order
@@ -41,10 +52,30 @@ class OrderSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         if 'items' in validated_data:
             items_data = validated_data.pop('items')
+
+            # Restore stock from existing items before deleting them
+            for existing_item in instance.items.all():
+                product = existing_item.product
+                product.stock += existing_item.quantity
+                product.save()
+
             # Delete existing items
             instance.items.all().delete()
-            # Create new items
+
+            # Create new items and decrease stock
             for item_data in items_data:
+                product = item_data['product']
+                quantity = item_data['quantity']
+
+                # Check if there's enough stock for new items
+                if product.stock >= quantity:
+                    product.stock -= quantity
+                    product.save()
+                else:
+                    # If there's not enough stock, restore all previous items and raise error
+                    raise serializers.ValidationError(
+                        f"Insufficient stock for product {product.name}")
+
                 OrderItem.objects.create(order=instance, **item_data)
 
         # Update other fields

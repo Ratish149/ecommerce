@@ -9,7 +9,8 @@ from .views import (
 
 urlpatterns = [
     path('products/', ProductListCreateView.as_view(), name='product-list-create'),
-    path('products/<slug:slug>/', ProductDetailView.as_view(), name='product-detail'),
+    path('products/<slug:category_slug>/<slug:slug>/',
+         ProductDetailView.as_view(), name='product-detail'),
     path('products/<slug:slug>/similar/',
          SimilarProductsView.as_view(), name='similar-products'),
     path('categories/', CategoryListCreateView.as_view(),

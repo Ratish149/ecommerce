@@ -3,6 +3,7 @@ from .models import Product, ProductCategory
 from .serializers import ProductSerializer, CategorySerializer, ProductDetailSerializer
 from django_filters import rest_framework as django_filters
 from rest_framework import filters
+from django.http import Http404
 # Create your views here.
 
 
@@ -39,6 +40,15 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductDetailSerializer
     lookup_field = 'slug'
+
+    def get_object(self):
+        category_slug = self.kwargs.get('category_slug')
+        slug = self.kwargs.get('slug')
+
+        try:
+            return Product.objects.get(category__slug=category_slug, slug=slug)
+        except Product.DoesNotExist:
+            raise Http404("Product not found")
 
 
 class CategoryListCreateView(generics.ListCreateAPIView):
