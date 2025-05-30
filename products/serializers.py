@@ -38,7 +38,7 @@ class ProductSerializer(serializers.ModelSerializer):
         source='category'
     )
     thumbnail_image = serializers.SerializerMethodField()
-
+    category_slug = serializers.CharField(source='category.slug', read_only=True)
     class Meta:
         model = Product
         fields = '__all__'
@@ -88,4 +88,4 @@ class ProductSmallSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = ['id', 'name', 'slug', 'market_price',
-                  'price', 'thumbnail_image', 'meta_title', 'meta_description']
+                  'price', 'thumbnail_image', 'meta_title', 'meta_description','category_slug']
