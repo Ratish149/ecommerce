@@ -43,11 +43,17 @@ class Product(models.Model):
     discount = models.DecimalField(
         max_digits=5, decimal_places=2, default=0.00, null=True, blank=True)
     is_active = models.BooleanField(default=True)
+    meta_title = models.CharField(max_length=225, blank=True, null=True)
+    meta_description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
+
+    class Meta:
+        ordering = ['-created_at']
+        unique_together = ('name', 'category')
 
     def save(self, *args, **kwargs):
         self.slug = slugify(self.name)

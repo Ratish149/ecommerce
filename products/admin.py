@@ -23,9 +23,10 @@ class ProductAdmin(ModelAdmin):
     prepopulated_fields = {'slug': ('name',)}
     ordering = ('-created_at',)
     inlines = [ProductImageInline]
-    formfield_overrides = {
-        models.TextField: {'widget': TinyMCE()},
-    }
+    def formfield_for_dbfield(self, db_field, **kwargs):
+        if db_field.name == 'description':
+            return db_field.formfield(widget=TinyMCE())
+        return super().formfield_for_dbfield(db_field, **kwargs)
 
 
 admin.site.register(Product, ProductAdmin)

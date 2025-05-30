@@ -50,3 +50,22 @@ class CategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = ProductCategory.objects.all()
     serializer_class = CategorySerializer
     lookup_field = 'slug'
+
+
+class SimilarProductsView(generics.ListAPIView):
+    serializer_class = ProductSerializer
+
+    def get_queryset(self):
+        slug = self.kwargs.get('slug')
+        try:
+            product = Product.objects.get(slug=slug)
+            # Get products from the same category, excluding the current product
+            similar_products = Product.objects.filter(
+                category=product.category,
+                is_active=True
+            ).exclude(
+                id=product.id
+            ).order_by('-created_at')[:3]  # Limit to 6 similar products
+            return similar_products
+        except Product.DoesNotExist:
+            return Product.objects.none()
