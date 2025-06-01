@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'accounts',
     'order',
+    'blog',
     'tinymce',
     'products',
 ]

@@ -38,7 +38,7 @@ class ProductSerializer(serializers.ModelSerializer):
         source='category'
     )
     thumbnail_image = serializers.SerializerMethodField()
-    category_slug = serializers.CharField(source='category.slug', read_only=True)
+
     class Meta:
         model = Product
         fields = '__all__'
@@ -68,11 +68,9 @@ class ProductSerializer(serializers.ModelSerializer):
 
 
 class ProductDetailSerializer(serializers.ModelSerializer):
-
     images = ProductImageSerializer(many=True, read_only=True)
     thumbnail_image = serializers.SerializerMethodField()
-    category=CategorySerializer()
-
+    category = CategorySerializer(read_only=True)
 
     class Meta:
         model = Product
@@ -85,7 +83,9 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
 
 class ProductSmallSerializer(serializers.ModelSerializer):
+    category = CategorySerializer(read_only=True)
+
     class Meta:
         model = Product
         fields = ['id', 'name', 'slug', 'market_price',
-                  'price', 'thumbnail_image', 'meta_title', 'meta_description','category_slug']
+                  'price', 'thumbnail_image', 'meta_title', 'meta_description', 'category']
