@@ -21,6 +21,12 @@ urlpatterns = [
     # Blog Comment URLs
     path('blog/comments/', views.BlogCommentListCreateView.as_view(),
          name='blog-comment-list-create'),
-    path('blog/comments/<int:pk>/', views.BlogCommentRetrieveUpdateDestroyView.as_view(),
+    path('blog/comments/<int:id>/', views.BlogCommentRetrieveUpdateDestroyView.as_view(),
          name='blog-comment-retrieve-update-destroy'),
+
+    # Testimonial URLs
+    path('testimonials/', views.TestimonialListCreateView.as_view(),
+         name='testimonial-list-create'),
+    path('testimonials/<int:id>/', views.TestimonialRetrieveUpdateDestroyView.as_view(),
+         name='testimonial-retrieve-update-destroy'),
 ]

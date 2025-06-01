@@ -28,6 +28,8 @@ class BlogTag(models.Model):
 
 
 class Blog(models.Model):
+    author = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='blogs', null=True, blank=True)
     title = models.CharField(max_length=255)
     slug = models.SlugField(unique=True, null=True, blank=True)
     description = models.TextField()
@@ -62,3 +64,15 @@ class BlogComment(models.Model):
 
     def __str__(self):
         return self.comment
+
+
+class Testimonial(models.Model):
+    name = models.CharField(max_length=255)
+    designation = models.CharField(max_length=255, null=True, blank=True)
+    image = models.FileField(upload_to='testimonial/', null=True, blank=True)
+    comment = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name

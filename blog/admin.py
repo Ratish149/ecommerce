@@ -1,6 +1,6 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
-from .models import Blog, BlogCategory, BlogTag, BlogComment
+from .models import Blog, BlogCategory, BlogTag, BlogComment, Testimonial
 from tinymce.widgets import TinyMCE
 from django.db import models
 # Register your models here.
@@ -26,5 +26,12 @@ class BlogCommentAdmin(ModelAdmin):
     search_fields = ('blog', 'user', 'comment')
 
 
+class TestimonialAdmin(ModelAdmin):
+    list_display = ('name', 'designation', 'created_at', 'updated_at')
+    list_filter = ('created_at', 'updated_at')
+    search_fields = ('name', 'designation')
+
+
 admin.site.register(Blog, BlogAdmin)
 admin.site.register(BlogComment, BlogCommentAdmin)
+admin.site.register(Testimonial, TestimonialAdmin)

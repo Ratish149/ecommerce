@@ -1,9 +1,11 @@
 from rest_framework import generics
-from .models import Product, ProductCategory
-from .serializers import ProductSerializer, CategorySerializer, ProductDetailSerializer
+from .models import Product, ProductCategory, Wishlist
+from .serializers import ProductSerializer, CategorySerializer, ProductDetailSerializer, WishlistSerializer
 from django_filters import rest_framework as django_filters
 from rest_framework import filters
 from django.http import Http404
+from rest_framework.response import Response
+from rest_framework import status
 # Create your views here.
 
 
@@ -79,3 +81,35 @@ class SimilarProductsView(generics.ListAPIView):
             return similar_products
         except Product.DoesNotExist:
             return Product.objects.none()
+
+
+class WishlistListCreateView(generics.ListCreateAPIView):
+    queryset = Wishlist.objects.all()
+    serializer_class = WishlistSerializer
+
+    def get_queryset(self):
+        return Wishlist.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class WishlistRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Wishlist.objects.all()
+    serializer_class = WishlistSerializer
+
+    def get_object(self):
+        try:
+            return Wishlist.objects.get(user=self.request.user)
+        except Wishlist.DoesNotExist:
+            raise Http404("Wishlist not found")
+
+    def delete(self, request, *args, **kwargs):
+        try:
+            id = self.kwargs.get('id')
+            wishlist = Wishlist.objects.get(
+                user=self.request.user, id=id)
+            wishlist.delete()
+            return Response({"message": "Product removed from wishlist"}, status=status.HTTP_204_NO_CONTENT)
+        except Wishlist.DoesNotExist:
+            raise Http404("Wishlist not found")

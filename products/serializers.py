@@ -1,5 +1,7 @@
 from rest_framework import serializers
-from .models import Product, ProductCategory, ProductImage
+
+from accounts.serializers import UserSerializer
+from .models import Product, ProductCategory, ProductImage, Wishlist
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -38,6 +40,7 @@ class ProductSerializer(serializers.ModelSerializer):
         source='category'
     )
     thumbnail_image = serializers.SerializerMethodField()
+    is_wishlisted = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -47,6 +50,10 @@ class ProductSerializer(serializers.ModelSerializer):
         if obj.thumbnail_image:
             return f'/media/{obj.thumbnail_image.name}'
         return None
+
+    def get_is_wishlisted(self, obj):
+        user = self.context.get('request').user
+        return Wishlist.objects.filter(user=user, product=obj).exists()
 
     def create(self, validated_data):
         request = self.context.get('request')
@@ -89,3 +96,17 @@ class ProductSmallSerializer(serializers.ModelSerializer):
         model = Product
         fields = ['id', 'name', 'slug', 'market_price',
                   'price', 'thumbnail_image', 'meta_title', 'meta_description', 'category']
+
+
+class WishlistSerializer(serializers.ModelSerializer):
+    product = ProductSmallSerializer(read_only=True)
+    product_id = serializers.PrimaryKeyRelatedField(
+        queryset=Product.objects.all(),
+        write_only=True,
+        source='product'
+    )
+
+    class Meta:
+        model = Wishlist
+        fields = ['id', 'user', 'product',
+                  'product_id', 'created_at', 'updated_at']

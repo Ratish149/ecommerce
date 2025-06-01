@@ -4,7 +4,9 @@ from .views import (
     ProductDetailView,
     CategoryListCreateView,
     CategoryDetailView,
-    SimilarProductsView
+    SimilarProductsView,
+    WishlistListCreateView,
+    WishlistRetrieveUpdateDestroyView
 )
 
 urlpatterns = [
@@ -17,4 +19,8 @@ urlpatterns = [
          name='category-list-create'),
     path('categories/<slug:slug>/', CategoryDetailView.as_view(),
          name='category-detail'),
+    path('wishlist/', WishlistListCreateView.as_view(),
+         name='wishlist-list-create'),
+    path('wishlist/<int:id>/', WishlistRetrieveUpdateDestroyView.as_view(),
+         name='wishlist-retrieve-update-destroy'),
 ]
