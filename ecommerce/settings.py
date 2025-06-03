@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'blog',
     'tinymce',
     'products',
+    'contact',
 ]
 
 MIDDLEWARE = [
@@ -109,12 +110,12 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
     'https://b7bwr4s3-8000.inc1.devtunnels.ms',
-    'https://kay-promised-savannah-sponsor.trycloudflare.com'
+    'https://replies-univ-consolidation-renewal.trycloudflare.com'
 ]
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000',
     'https://b7bwr4s3-8000.inc1.devtunnels.ms',
-    'https://kay-promised-savannah-sponsor.trycloudflare.com'
+    'https://replies-univ-consolidation-renewal.trycloudflare.com'
 ]
 
 

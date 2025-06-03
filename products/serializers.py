@@ -52,8 +52,12 @@ class ProductSerializer(serializers.ModelSerializer):
         return None
 
     def get_is_wishlisted(self, obj):
+        if not self.context.get('request').user.is_authenticated:
+            return False
         user = self.context.get('request').user
-        return Wishlist.objects.filter(user=user, product=obj).exists()
+        if user:
+            return Wishlist.objects.filter(user=user, product=obj).exists()
+        return False
 
     def create(self, validated_data):
         request = self.context.get('request')
