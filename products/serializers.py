@@ -122,11 +122,6 @@ class ProductReviewSerializer(serializers.ModelSerializer):
         write_only=True,
         source='product'
     )
-    user_id = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(),
-        write_only=True,
-        source='user'
-    )
     product = ProductSmallSerializer(read_only=True)
     user = UserSerializer(read_only=True)
 

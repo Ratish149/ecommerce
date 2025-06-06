@@ -131,3 +131,6 @@ class ProductReviewView(generics.ListCreateAPIView):
             return ProductReview.objects.filter(product=product)
         except Product.DoesNotExist:
             return ProductReview.objects.all()
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
