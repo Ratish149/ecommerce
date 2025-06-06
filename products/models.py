@@ -60,6 +60,7 @@ class Product(models.Model):
         self.slug = slugify(self.name)
         super().save(*args, **kwargs)
 
+
 class ProductReview(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -70,6 +71,7 @@ class ProductReview(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.product.name}"
+
 
 class Wishlist(models.Model):
     user = models.ForeignKey(

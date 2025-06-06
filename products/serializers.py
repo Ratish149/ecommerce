@@ -1,7 +1,7 @@
 from rest_framework import serializers
-
+from accounts.models import User
 from accounts.serializers import UserSerializer
-from .models import Product, ProductCategory, ProductImage, Wishlist,ProductReview
+from .models import Product, ProductCategory, ProductImage, Wishlist, ProductReview
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -115,15 +115,32 @@ class WishlistSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'product',
                   'product_id', 'created_at', 'updated_at']
 
+
 class ProductReviewSerializer(serializers.ModelSerializer):
-    product=serializers.PrimaryKeyRelatedField(read_only=True)
-    user=serializers.PrimaryKeyRelatedField(read_only=True)
+    product_id = serializers.PrimaryKeyRelatedField(
+        queryset=Product.objects.all(),
+        write_only=True,
+        source='product'
+    )
+    user_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        write_only=True,
+        source='user'
+    )
+    product = ProductSmallSerializer(read_only=True)
+    user = UserSerializer(read_only=True)
+
     class Meta:
         model = ProductReview
-        fields = ['id', 'product', 'user', 'review', 'rating', 'created_at', 'updated_at']
+        fields = ['id', 'product_id', 'user_id', 'product', 'user', 'review',
+                  'rating', 'created_at', 'updated_at']
+
 
 class ProductReviewDetailSerializer(serializers.ModelSerializer):
-    user=UserSerializer(read_only=True)
+    product = ProductSmallSerializer(read_only=True)
+    user = UserSerializer(read_only=True)
+
     class Meta:
         model = ProductReview
-        fields = ['id', 'product', 'user', 'review', 'rating', 'created_at', 'updated_at']
+        fields = ['id', 'product', 'user', 'review',
+                  'rating', 'created_at', 'updated_at']

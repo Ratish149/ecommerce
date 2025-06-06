@@ -126,11 +126,8 @@ class ProductReviewView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         slug = self.request.query_params.get('slug')
-        if not slug:
-            return ProductReview.objects.none()
-
         try:
             product = Product.objects.get(slug=slug)
             return ProductReview.objects.filter(product=product)
         except Product.DoesNotExist:
-            return ProductReview.objects.none()
+            return ProductReview.objects.all()
