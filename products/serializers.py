@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from accounts.serializers import UserSerializer
-from .models import Product, ProductCategory, ProductImage, Wishlist
+from .models import Product, ProductCategory, ProductImage, Wishlist,ProductReview
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -114,3 +114,16 @@ class WishlistSerializer(serializers.ModelSerializer):
         model = Wishlist
         fields = ['id', 'user', 'product',
                   'product_id', 'created_at', 'updated_at']
+
+class ProductReviewSerializer(serializers.ModelSerializer):
+    product=serializers.PrimaryKeyRelatedField(read_only=True)
+    user=serializers.PrimaryKeyRelatedField(read_only=True)
+    class Meta:
+        model = ProductReview
+        fields = ['id', 'product', 'user', 'review', 'rating', 'created_at', 'updated_at']
+
+class ProductReviewDetailSerializer(serializers.ModelSerializer):
+    user=UserSerializer(read_only=True)
+    class Meta:
+        model = ProductReview
+        fields = ['id', 'product', 'user', 'review', 'rating', 'created_at', 'updated_at']
