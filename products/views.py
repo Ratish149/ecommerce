@@ -1,6 +1,6 @@
 from rest_framework import generics
-from .models import Product, ProductCategory, Wishlist,ProductReview
-from .serializers import ProductSerializer, CategorySerializer, ProductDetailSerializer, WishlistSerializer,ProductReviewDetailSerializer, ProductReviewSerializer
+from .models import Product, ProductCategory, Wishlist, ProductReview
+from .serializers import ProductSerializer, CategorySerializer, ProductDetailSerializer, WishlistSerializer, ProductReviewDetailSerializer, ProductReviewSerializer
 from django_filters import rest_framework as django_filters
 from rest_framework import filters
 from django.http import Http404
@@ -114,6 +114,7 @@ class WishlistRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
         except Wishlist.DoesNotExist:
             raise Http404("Wishlist not found")
 
+
 class ProductReviewView(generics.ListCreateAPIView):
     queryset = ProductReview.objects.all().order_by('-created_at')
     serializer_class = ProductReviewSerializer
@@ -124,7 +125,10 @@ class ProductReviewView(generics.ListCreateAPIView):
         return ProductReviewSerializer
 
     def get_queryset(self):
-        slug = self.kwargs.get('slug')
+        slug = self.request.query_params.get('slug')
+        if not slug:
+            return ProductReview.objects.none()
+
         try:
             product = Product.objects.get(slug=slug)
             return ProductReview.objects.filter(product=product)
