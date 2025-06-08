@@ -19,7 +19,7 @@ class CategorySerializer(serializers.ModelSerializer):
 class ProductImageSmallSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductImage
-        fields = ['__all__']
+        fields = ['id', 'image', 'name', 'image_alt_description', 'product']
 
 class ProductImageSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()

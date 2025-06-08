@@ -13,13 +13,22 @@ class ProductImageListCreateView(generics.ListCreateAPIView):
     queryset = ProductImage.objects.all()
     serializer_class = ProductImageSmallSerializer
 
+
 class ProductImageRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = ProductImage.objects.all()
-    
+    lookup_field = 'id'
+
+    def get_object(self):
+        try:
+            return ProductImage.objects.get(id=self.kwargs['id'])
+        except ProductImage.DoesNotExist:
+            raise Http404("Product image not found")
+
     def get_serializer_class(self):
         if self.request.method == 'GET':
             return ProductImageSmallSerializer
         return ProductImageSerializer
+
 
 class ProductFilter(django_filters.FilterSet):
     name = django_filters.CharFilter(lookup_expr='icontains')
@@ -62,7 +71,7 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
             return Product.objects.get(category__slug=category_slug, slug=slug)
         except Product.DoesNotExist:
             raise Http404("Product not found")
-    
+
     def get_serializer_class(self):
         if self.request.method == 'GET':
             return ProductDetailSerializer
