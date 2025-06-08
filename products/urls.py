@@ -7,7 +7,9 @@ from .views import (
     SimilarProductsView,
     WishlistListCreateView,
     WishlistRetrieveUpdateDestroyView,
-    ProductReviewView
+    ProductReviewView,
+    ProductImageListCreateView,
+    ProductImageRetrieveUpdateDestroyView
 )
 
 urlpatterns = [
@@ -16,6 +18,8 @@ urlpatterns = [
          SimilarProductsView.as_view(), name='similar-products'),
     path('products/<slug:category_slug>/<slug:slug>/',
          ProductDetailView.as_view(), name='product-detail'),
+    path('products/images/', ProductImageListCreateView.as_view(), name='product-image-list-create'),
+    path('products/images/<int:id>/', ProductImageRetrieveUpdateDestroyView.as_view(), name='product-image-retrieve-update-destroy'),
     path('categories/', CategoryListCreateView.as_view(),
          name='category-list-create'),
     path('categories/<slug:slug>/', CategoryDetailView.as_view(),

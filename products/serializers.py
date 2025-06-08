@@ -16,6 +16,10 @@ class CategorySerializer(serializers.ModelSerializer):
             return f'/media/{obj.image.name}'
         return None
 
+class ProductImageSmallSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductImage
+        fields = ['__all__']
 
 class ProductImageSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
@@ -76,6 +80,23 @@ class ProductSerializer(serializers.ModelSerializer):
             ProductImage.objects.create(
                 product=product, image=image_file, name=image_file.name)
         return product
+    
+    def update(self, instance, validated_data):
+        images_data = self.context.get('request').FILES.getlist('images')
+        thumbnail_image = self.context.get('request').FILES.get('thumbnail_image')
+
+        # Update product with thumbnail image if provided
+        if thumbnail_image:
+            instance.thumbnail_image = thumbnail_image
+
+        instance = super().update(instance, validated_data)
+
+        # Update product images
+        instance.images.all().delete()
+        for image_file in images_data:
+            ProductImage.objects.create(
+                product=instance, image=image_file, name=image_file.name)
+        return instance
 
 
 class ProductDetailSerializer(serializers.ModelSerializer):
@@ -91,6 +112,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         if obj.thumbnail_image:
             return f'/media/{obj.thumbnail_image.name}'
         return None
+    
 
 
 class ProductSmallSerializer(serializers.ModelSerializer):

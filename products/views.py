@@ -1,6 +1,6 @@
 from rest_framework import generics
-from .models import Product, ProductCategory, Wishlist, ProductReview
-from .serializers import ProductSerializer, CategorySerializer, ProductDetailSerializer, WishlistSerializer, ProductReviewDetailSerializer, ProductReviewSerializer
+from .models import Product, ProductCategory, Wishlist, ProductReview, ProductImage
+from .serializers import ProductSerializer, CategorySerializer, ProductDetailSerializer, WishlistSerializer, ProductReviewDetailSerializer, ProductReviewSerializer, ProductImageSerializer
 from django_filters import rest_framework as django_filters
 from rest_framework import filters
 from django.http import Http404
@@ -8,6 +8,14 @@ from rest_framework.response import Response
 from rest_framework import status
 # Create your views here.
 
+
+class ProductImageListCreateView(generics.ListCreateAPIView):
+    queryset = ProductImage.objects.all()
+    serializer_class = ProductImageSerializer
+
+class ProductImageRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = ProductImage.objects.all()
+    serializer_class = ProductImageSerializer
 
 class ProductFilter(django_filters.FilterSet):
     name = django_filters.CharFilter(lookup_expr='icontains')
@@ -51,6 +59,11 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
             return Product.objects.get(category__slug=category_slug, slug=slug)
         except Product.DoesNotExist:
             raise Http404("Product not found")
+    
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return ProductDetailSerializer
+        return ProductSerializer
 
 
 class CategoryListCreateView(generics.ListCreateAPIView):
