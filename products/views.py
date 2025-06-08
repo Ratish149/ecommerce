@@ -1,6 +1,6 @@
 from rest_framework import generics
 from .models import Product, ProductCategory, Wishlist, ProductReview, ProductImage
-from .serializers import ProductSerializer, CategorySerializer, ProductDetailSerializer, WishlistSerializer, ProductReviewDetailSerializer, ProductReviewSerializer, ProductImageSerializer
+from .serializers import ProductSerializer, CategorySerializer, ProductDetailSerializer, WishlistSerializer, ProductReviewDetailSerializer, ProductReviewSerializer, ProductImageSerializer, ProductImageSmallSerializer
 from django_filters import rest_framework as django_filters
 from rest_framework import filters
 from django.http import Http404
@@ -11,11 +11,15 @@ from rest_framework import status
 
 class ProductImageListCreateView(generics.ListCreateAPIView):
     queryset = ProductImage.objects.all()
-    serializer_class = ProductImageSerializer
+    serializer_class = ProductImageSmallSerializer
 
 class ProductImageRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = ProductImage.objects.all()
-    serializer_class = ProductImageSerializer
+    
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return ProductImageSmallSerializer
+        return ProductImageSerializer
 
 class ProductFilter(django_filters.FilterSet):
     name = django_filters.CharFilter(lookup_expr='icontains')
@@ -48,7 +52,6 @@ class ProductListCreateView(generics.ListCreateAPIView):
 
 class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Product.objects.all()
-    serializer_class = ProductDetailSerializer
     lookup_field = 'slug'
 
     def get_object(self):

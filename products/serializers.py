@@ -87,6 +87,8 @@ class ProductSerializer(serializers.ModelSerializer):
 
         # Update product with thumbnail image if provided
         if thumbnail_image:
+            if instance.thumbnail_image:
+                instance.thumbnail_image.delete()
             instance.thumbnail_image = thumbnail_image
 
         instance = super().update(instance, validated_data)
