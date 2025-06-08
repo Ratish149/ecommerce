@@ -92,12 +92,11 @@ class ProductSerializer(serializers.ModelSerializer):
             instance.thumbnail_image = thumbnail_image
 
         instance = super().update(instance, validated_data)
-
-        # Update product images
-        instance.images.all().delete()
-        for image_file in images_data:
-            ProductImage.objects.create(
-                product=instance, image=image_file, name=image_file.name)
+        if images_data:
+            instance.images.all().delete()
+            for image_file in images_data:
+                ProductImage.objects.create(
+                    product=instance, image=image_file, name=image_file.name)
         return instance
 
 
