@@ -143,7 +143,7 @@ class MyOrderView(ListAPIView):
     pagination_class = CustomPagination
     filter_backends = [DjangoFilterBackend,
                        rest_filters.SearchFilter, rest_filters.OrderingFilter]
-    search_fields = ['order_number', 'product__name']
+    search_fields = ['order_number', 'items__product__name']
     filterset_class = MyOrderFilter
     serializer_class = OrderSmallSerializer
 
@@ -232,4 +232,3 @@ class RevenueView(ListAPIView):
                 {'error': f'Failed to fetch revenue data: {str(e)}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-    
