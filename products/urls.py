@@ -31,8 +31,8 @@ urlpatterns = [
          name='wishlist-list-create'),
     path('wishlist/<int:id>/', WishlistRetrieveUpdateDestroyView.as_view(),
          name='wishlist-retrieve-update-destroy'),
-    path('products/reviews/',
+    path('product-reviews/',
          ProductReviewView.as_view(), name='product-review'),
-    path('products/reviews/<int:id>/', ProductReviewRetrieveUpdateDestroyView.as_view(),
+    path('product-reviews/<int:id>/', ProductReviewRetrieveUpdateDestroyView.as_view(),
          name='product-review-retrieve-update-destroy'),
 ]
