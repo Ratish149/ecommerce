@@ -140,9 +140,20 @@ class WishlistRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
             raise Http404("Wishlist not found")
 
 
+class ProductReviewFilter(django_filters.FilterSet):
+    rating = django_filters.NumberFilter(
+        field_name='rating', lookup_expr='exact')
+
+    class Meta:
+        model = ProductReview
+        fields = ['rating']
+
+
 class ProductReviewView(generics.ListCreateAPIView):
     queryset = ProductReview.objects.all().order_by('-created_at')
     serializer_class = ProductReviewSerializer
+    filter_backends = [django_filters.DjangoFilterBackend,]
+    filterset_class = ProductReviewFilter
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
@@ -159,3 +170,9 @@ class ProductReviewView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+
+class ProductReviewRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = ProductReview.objects.all()
+    serializer_class = ProductReviewSerializer
+    lookup_field = 'id'
