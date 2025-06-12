@@ -104,8 +104,8 @@ REST_FRAMEWORK = {
 WSGI_APPLICATION = 'ecommerce.wsgi.application'
 
 # CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
-
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
@@ -171,6 +171,7 @@ USE_TZ = True
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 STATIC_URL = 'static/'
+STATICFILES_DIRS = []
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 MEDIA_URL = '/media/'
 MEDIA_ROOT = Path(BASE_DIR, 'media')
