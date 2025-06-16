@@ -109,27 +109,25 @@ CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
-    'https://b7bwr4s3-8000.inc1.devtunnels.ms',
-    'https://replies-univ-consolidation-renewal.trycloudflare.com'
+    'https://lead-singh-chip-alt.trycloudflare.com'
 ]
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000',
-    'https://b7bwr4s3-8000.inc1.devtunnels.ms',
-    'https://replies-univ-consolidation-renewal.trycloudflare.com'
+    'https://lead-singh-chip-alt.trycloudflare.com'
 ]
 
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-""" DATABASES = {
+DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
-} """
+}
 
-DATABASES = {
+""" DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'ecom',
@@ -138,7 +136,7 @@ DATABASES = {
         'HOST': 'localhost',
         'PORT': '',
     }
-}
+} """
 
 AUTH_USER_MODEL = 'accounts.User'
 

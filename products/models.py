@@ -17,10 +17,40 @@ class ProductCategory(models.Model):
         super().save(*args, **kwargs)
 
 
+class ProductSubCategory(models.Model):
+    name = models.CharField(max_length=100)
+    slug = models.SlugField(null=True, blank=True)
+    description = models.TextField(blank=True)
+    image = models.FileField(upload_to='subcategories/', null=True, blank=True)
+    category = models.ForeignKey(
+        ProductCategory, related_name='subcategories', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+
+class Size(models.Model):
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+
+    def __str__(self):
+        return self.name
+
+class Color(models.Model):
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+
+    def __str__(self):
+        return self.name
+
 class ProductImage(models.Model):
-    name = models.CharField(max_length=100, blank=True, null=True)
     image = models.FileField(upload_to='products/')
     image_alt_description = models.TextField(blank=True, null=True)
+    color = models.CharField(max_length=100, blank=True, null=True)
     product = models.ForeignKey(
         'Product', related_name='images', on_delete=models.CASCADE)
 
@@ -32,13 +62,18 @@ class Product(models.Model):
     name = models.CharField(max_length=100)
     slug = models.SlugField(null=True, blank=True, max_length=225)
     description = models.TextField(blank=True)
-    market_price = models.DecimalField(max_digits=10, decimal_places=2)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
-    stock = models.PositiveIntegerField()
+    market_price = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.00, null=True, blank=True)
+    price = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.00, null=True, blank=True)
+    stock = models.PositiveIntegerField(default=0, null=True, blank=True)
     thumbnail_image = models.FileField(
         upload_to='products/thumbnails/', null=True, blank=True)
+    thumbnail_image_alt_description = models.TextField(blank=True, null=True)
     category = models.ForeignKey(
-        ProductCategory, related_name='products', on_delete=models.CASCADE)
+        ProductCategory, related_name='products', on_delete=models.CASCADE, null=True, blank=True)
+    subcategory = models.ForeignKey(
+        ProductSubCategory, related_name='products', on_delete=models.CASCADE, null=True, blank=True)
     is_popular = models.BooleanField(default=False)
     is_featured = models.BooleanField(default=False)
     discount = models.DecimalField(
@@ -48,13 +83,14 @@ class Product(models.Model):
     meta_description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    size = models.ManyToManyField(Size, blank=True)
 
     def __str__(self):
         return self.name
 
     class Meta:
         ordering = ['-created_at']
-        unique_together = ('name', 'category')
+        unique_together = ('name', 'subcategory')
 
     def save(self, *args, **kwargs):
         self.slug = slugify(self.name)

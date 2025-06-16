@@ -10,7 +10,13 @@ from .views import (
     ProductReviewView,
     ProductImageListCreateView,
     ProductImageRetrieveUpdateDestroyView,
-    ProductReviewRetrieveUpdateDestroyView
+    ProductReviewRetrieveUpdateDestroyView,
+    BulkProductUploadView,
+    ProductExcelExportWithDropdownAPIView,
+    SizeListCreateView,
+    SizeRetrieveUpdateDestroyView,
+    SubCategoryListCreateView,
+    SubCategoryRetrieveUpdateDestroyView,
 )
 
 urlpatterns = [
@@ -27,6 +33,10 @@ urlpatterns = [
          name='category-list-create'),
     path('categories/<slug:slug>/', CategoryDetailView.as_view(),
          name='category-detail'),
+    path('subcategories/', SubCategoryListCreateView.as_view(),
+         name='subcategory-list-create'),
+    path('subcategories/<slug:slug>/', SubCategoryRetrieveUpdateDestroyView.as_view(),
+         name='subcategory-detail'),
     path('wishlist/', WishlistListCreateView.as_view(),
          name='wishlist-list-create'),
     path('wishlist/<int:id>/', WishlistRetrieveUpdateDestroyView.as_view(),
@@ -35,4 +45,11 @@ urlpatterns = [
          ProductReviewView.as_view(), name='product-review'),
     path('product-reviews/<int:id>/', ProductReviewRetrieveUpdateDestroyView.as_view(),
          name='product-review-retrieve-update-destroy'),
+    path('products/bulk-upload/', BulkProductUploadView.as_view(),
+         name='product-bulk-upload'),
+    path('download/product-template/', ProductExcelExportWithDropdownAPIView.as_view(),
+         name='product-template-download'),
+    path('sizes/', SizeListCreateView.as_view(), name='size-list-create'),
+    path('sizes/<int:id>/', SizeRetrieveUpdateDestroyView.as_view(),
+         name='size-retrieve-update-destroy'),
 ]
