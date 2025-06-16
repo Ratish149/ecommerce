@@ -76,17 +76,9 @@ class ProductImageSerializer(serializers.ModelSerializer):
         return None
 
 
-class ProductImageCreateSerializer(serializers.Serializer):
-    image = serializers.FileField()
-    color = serializers.CharField(
-        required=False, allow_null=True, allow_blank=True)
-
-
 class ProductSerializer(serializers.ModelSerializer):
     size = SizeSerializer(many=True, read_only=True)
     images = ProductImageSerializer(many=True, read_only=True)
-    image_data = ProductImageCreateSerializer(
-        many=True, write_only=True, required=False)
     category = CategorySerializer(read_only=True)
     subcategory = SubCategorySerializer(read_only=True)
     category_id = serializers.PrimaryKeyRelatedField(
@@ -133,7 +125,6 @@ class ProductSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         request = self.context.get('request')
-        image_data = request.data.get('image_data', [])
         thumbnail_image = request.FILES.get(
             'thumbnail_image') if request else None
         size_ids = request.data.getlist('size_id') if request else []
@@ -142,9 +133,8 @@ class ProductSerializer(serializers.ModelSerializer):
         if thumbnail_image:
             validated_data['thumbnail_image'] = thumbnail_image
 
-        # Remove size and image_data from validated_data as we'll handle them separately
+        # Remove size from validated_data as we'll handle it separately
         validated_data.pop('size', None)
-        validated_data.pop('image_data', None)
 
         # Create the product
         product = Product.objects.create(**validated_data)
@@ -153,34 +143,26 @@ class ProductSerializer(serializers.ModelSerializer):
         if size_ids:
             product.size.set(size_ids)
 
-        # Create product images with colors
-        for index, img_data in enumerate(image_data):
-            try:
-                # Parse the image data if it's a string
-                if isinstance(img_data, str):
-                    import json
-                    img_data = json.loads(img_data)
+        # Create product images
+        index = 0
+        while True:
+            image_file = request.FILES.get(f'image_data[{index}][image]')
+            if not image_file:
+                break
 
-                image_file = request.FILES.get(f'image_data[{index}][image]')
-                color = img_data.get('color') if isinstance(
-                    img_data, dict) else None
-
-                if image_file:
-                    ProductImage.objects.create(
-                        product=product,
-                        image=image_file,
-                        image_alt_description=image_file.name,
-                        color=color
-                    )
-            except Exception as e:
-                print(f"Error processing image {index}: {str(e)}")
-                continue
+            color = request.data.get(f'image_data[{index}][color]')
+            ProductImage.objects.create(
+                product=product,
+                image=image_file,
+                image_alt_description=image_file.name,
+                color=color
+            )
+            index += 1
 
         return product
 
     def update(self, instance, validated_data):
         request = self.context.get('request')
-        image_data = request.data.get('image_data', [])
         thumbnail_image = request.FILES.get(
             'thumbnail_image') if request else None
         size_ids = request.data.getlist('size_id') if request else []
@@ -193,9 +175,8 @@ class ProductSerializer(serializers.ModelSerializer):
                 instance.thumbnail_image.delete()
             instance.thumbnail_image = thumbnail_image
 
-        # Remove size and image_data from validated_data as we'll handle them separately
+        # Remove size from validated_data as we'll handle it separately
         validated_data.pop('size', None)
-        validated_data.pop('image_data', None)
 
         # Update basic product fields
         for attr, value in validated_data.items():
@@ -212,27 +193,20 @@ class ProductSerializer(serializers.ModelSerializer):
                 id__in=delete_images, product=instance).delete()
 
         # Add new images
-        for index, img_data in enumerate(image_data):
-            try:
-                # Parse the image data if it's a string
-                if isinstance(img_data, str):
-                    import json
-                    img_data = json.loads(img_data)
+        index = 0
+        while True:
+            image_file = request.FILES.get(f'image_data[{index}][image]')
+            if not image_file:
+                break
 
-                image_file = request.FILES.get(f'image_data[{index}][image]')
-                color = img_data.get('color') if isinstance(
-                    img_data, dict) else None
-
-                if image_file:
-                    ProductImage.objects.create(
-                        product=instance,
-                        image=image_file,
-                        image_alt_description=image_file.name,
-                        color=color
-                    )
-            except Exception as e:
-                print(f"Error processing image {index}: {str(e)}")
-                continue
+            color = request.data.get(f'image_data[{index}][color]')
+            ProductImage.objects.create(
+                product=instance,
+                image=image_file,
+                image_alt_description=image_file.name,
+                color=color
+            )
+            index += 1
 
         return instance
 
