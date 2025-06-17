@@ -227,31 +227,19 @@ class ProductReviewRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIVi
 
 class ProductExcelExportWithDropdownAPIView(APIView):
     def get(self, request, format=None):
-        # Sample product
-        product = Product.objects.select_related('category', 'subcategory') \
-            .prefetch_related('images', 'size') \
-            .annotate(
-                image_count=Count('images'),
-                size_count=Count('size')
-        ) \
-            .filter(
-                category__isnull=False,
-                subcategory__isnull=False,
-                image_count__gt=0,
-                size_count__gt=0
-        ).first()
         categories = list(
             ProductCategory.objects.values_list('name', flat=True))
         sub_categories = list(
             ProductSubCategory.objects.values_list('name', flat=True))
         sizes = list(Size.objects.values_list('name', flat=True))
 
-        # Excel setup
+        # Setup workbook
         output = io.BytesIO()
         wb = Workbook()
         ws = wb.active
         ws.title = "Products"
 
+        # Define headers
         headers = [
             'Product Name', 'Category', 'Sub Category', 'Price', 'Market Price', 'Discount',
             'Product Stock', 'Is popular', 'Is featured', 'Description', 'Meta Title', 'Meta Description',
@@ -260,60 +248,67 @@ class ProductExcelExportWithDropdownAPIView(APIView):
         ]
         ws.append(headers)
 
-        if product:
-            size_str = ', '.join([size.name for size in product.size.all()])
-            common_data = {
-                'Product Name': product.name if product.name else 'Product Name',
-                'Category': product.category.name if product.category else 'Category',
-                'Sub Category': product.subcategory.name if product.subcategory else 'Sub Category',
-                'Price': float(product.price or 0),
-                'Market Price': float(product.market_price or 0),
-                'Discount': float(product.discount or 0),
-                'Product Stock': product.stock if product.stock else 'Product Stock',
-                'Is popular': 'TRUE' if product.is_popular else 'FALSE',
-                'Is featured': 'TRUE' if product.is_featured else 'FALSE',
-                'Description': product.description or 'Product Description',
-                'Meta Title': product.meta_title or 'Product Meta Title',
-                'Meta Description': product.meta_description or 'Product Meta Description',
-                'Size': size_str if size_str else 'S,M,L',
-                'Thumbnail image': product.thumbnail_image.url if product.thumbnail_image else 'Thumbnail Image',
-                'Thumbnail Image Alt Description': product.thumbnail_image_alt_description or 'Thumbnail Alt Description',
-            }
+        # Sample common data (only on first row)
+        common_data = {
+            'Product Name': 'Product Name',
+            'Category': 'Category',
+            'Sub Category': 'Sub Category',
+            'Price': 100,
+            'Market Price': 100,
+            'Discount': 100,
+            'Product Stock': 100,
+            'Is popular': 'TRUE',
+            'Is featured': 'FALSE',
+            'Description': 'Product Description',
+            'Meta Title': 'Product Meta Title',
+            'Meta Description': 'Product Meta Description',
+            'Size': 'S, M, L',
+            'Thumbnail image': 'https://example.com/thumbnail.jpg',
+            'Thumbnail Image Alt Description': 'Thumbnail Alt Description',
+        }
 
-            first = True
-            for img in product.images.all():
-                row = []
-                for h in headers:
-                    if h in ['Color', 'Stock (Color)', 'Images', 'Image Alt Description']:
-                        continue
-                    row.append(common_data[h] if first else '')
+        # Sample image rows with 3 variants (Color 1, 2, 3)
+        for i in range(3):
+            row = []
+            for h in headers:
+                if h in ['Color', 'Stock (Color)', 'Images', 'Image Alt Description']:
+                    continue
+                # Fill only on first row
+                row.append(common_data[h] if i == 0 else '')
 
-                row.append(img.color or '')
-                row.append(img.stock or '')
-                row.append(img.image.url if img.image else '')
-                row.append(img.image_alt_description or '')
+            row.append(f'Color {i+1}')
+            row.append(10 * (i+1))  # Stock
+            row.append(f'https://example.com/image{i+1}.jpg')
+            row.append(f'Image Alt Description {i+1}')
 
-                ws.append(row)
-                first = False
+            ws.append(row)
 
-        # Dropdowns
-        ws.add_data_validation(DataValidation(
-            type="list", formula1=f'"{",".join(categories)}"', allow_blank=True, sqref="B2:B100"
-        ))
-        ws.add_data_validation(DataValidation(
-            type="list", formula1=f'"{",".join(sub_categories)}"', allow_blank=True, sqref="C2:C100"
-        ))
+        # Dropdowns for category and subcategory
+        if categories:
+            dv = DataValidation(
+                type="list", formula1=f'"{",".join(categories)}"', allow_blank=True)
+            dv.add("B2:B100")
+            ws.add_data_validation(dv)
+
+        if sub_categories:
+            dv = DataValidation(
+                type="list", formula1=f'"{",".join(sub_categories)}"', allow_blank=True)
+            dv.add("C2:C100")
+            ws.add_data_validation(dv)
+
+        # Dropdown for booleans
         for col in ['H', 'I']:
-            ws.add_data_validation(DataValidation(
-                type="list", formula1='"TRUE,FALSE"', allow_blank=True, sqref=f"{col}2:{col}100"
-            ))
+            dv = DataValidation(
+                type="list", formula1='"TRUE,FALSE"', allow_blank=True)
+            dv.add(f"{col}2:{col}100")
+            ws.add_data_validation(dv)
 
         # Auto column width
         for col in ws.columns:
-            length = max(len(str(cell.value or '')) for cell in col)
-            ws.column_dimensions[col[0].column_letter].width = length + 2
+            max_len = max(len(str(cell.value or '')) for cell in col)
+            ws.column_dimensions[col[0].column_letter].width = max_len + 2
 
-        # Return response
+        # Return Excel file
         wb.save(output)
         output.seek(0)
         response = HttpResponse(
