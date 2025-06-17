@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import Order, OrderItem
-from products.models import Product
+from products.models import Product, Size
 from products.serializers import ProductSmallSerializer
 
 
@@ -12,10 +12,17 @@ class OrderItemSerializer(serializers.ModelSerializer):
         source='product'
     )
     color = serializers.CharField(required=False, allow_null=True)
+    size = serializers.PrimaryKeyRelatedField(
+        queryset=Size.objects.all(),
+        write_only=True,
+        required=False,
+        allow_null=True
+    )
 
     class Meta:
         model = OrderItem
-        fields = ['product', 'product_id', 'quantity', 'price', 'color']
+        fields = ['product', 'product_id',
+                  'quantity', 'price', 'color', 'size']
 
 
 class OrderSerializer(serializers.ModelSerializer):
@@ -42,7 +49,7 @@ class OrderSerializer(serializers.ModelSerializer):
             if color:
                 # Check color-specific stock with case-insensitive matching
                 product_image = product.images.filter(
-                    color__name__icontains=color).first()
+                    color=color).first()
                 if not product_image:
                     raise serializers.ValidationError(
                         f"Color {color} not available for product {product.name}")
@@ -77,7 +84,7 @@ class OrderSerializer(serializers.ModelSerializer):
                 product = existing_item.product
                 if existing_item.color:
                     product_image = product.images.filter(
-                        color__name__icontains=existing_item.color).first()
+                        color=existing_item.color).first()
                     if product_image:
                         product_image.stock += existing_item.quantity
                         product_image.save()
@@ -97,7 +104,7 @@ class OrderSerializer(serializers.ModelSerializer):
                 if color:
                     # Check color-specific stock with case-insensitive matching
                     product_image = product.images.filter(
-                        color__name__icontains=color).first()
+                        color=color).first()
                     if not product_image:
                         raise serializers.ValidationError(
                             f"Color {color} not available for product {product.name}")
@@ -137,11 +144,12 @@ class OrderItemSmallSerializer(serializers.ModelSerializer):
     product_price = serializers.DecimalField(
         source='product.price', max_digits=10, decimal_places=2)
     total_price = serializers.SerializerMethodField()
+    size = serializers.SerializerMethodField()
 
     class Meta:
         model = OrderItem
         fields = ['product_id', 'product_name', 'product_slug', 'product_thumbnail_image', 'product_price',
-                  'quantity', 'price', 'total_price']
+                  'quantity', 'price', 'total_price', 'color', 'size']
 
     def get_total_price(self, obj):
         return obj.total_price
@@ -149,6 +157,11 @@ class OrderItemSmallSerializer(serializers.ModelSerializer):
     def get_product_thumbnail_image(self, obj):
         if obj.product.thumbnail_image:
             return f'/media/{obj.product.thumbnail_image.name}'
+        return None
+
+    def get_size(self, obj):
+        if obj.size:
+            return obj.size.name
         return None
 
 

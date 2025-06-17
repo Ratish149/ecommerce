@@ -5,7 +5,7 @@ from accounts.models import User
 
 class ProductCategory(models.Model):
     name = models.CharField(max_length=100)
-    slug = models.SlugField(null=True, blank=True)
+    slug = models.SlugField(null=True, blank=True, db_index=True)
     description = models.TextField(blank=True)
     image = models.FileField(upload_to='categories/', null=True, blank=True)
 
@@ -19,7 +19,7 @@ class ProductCategory(models.Model):
 
 class ProductSubCategory(models.Model):
     name = models.CharField(max_length=100)
-    slug = models.SlugField(null=True, blank=True)
+    slug = models.SlugField(null=True, blank=True, db_index=True)
     description = models.TextField(blank=True)
     image = models.FileField(upload_to='subcategories/', null=True, blank=True)
     category = models.ForeignKey(
@@ -54,7 +54,7 @@ class ProductImage(models.Model):
     image_alt_description = models.TextField(blank=True, null=True)
     color = models.CharField(max_length=100, blank=True, null=True)
     stock = models.PositiveIntegerField(default=0, null=True, blank=True)
-    product = models.ForeignKey(  
+    product = models.ForeignKey(
         'Product', related_name='images', on_delete=models.CASCADE)
 
     def __str__(self):
@@ -94,6 +94,13 @@ class Product(models.Model):
     class Meta:
         ordering = ['-created_at']
         unique_together = ('name', 'subcategory')
+        indexes = [
+            models.Index(fields=['name']),
+            models.Index(fields=['created_at']),
+            models.Index(fields=['price']),
+            models.Index(fields=['is_popular']),
+            models.Index(fields=['is_featured']),
+        ]
 
     def save(self, *args, **kwargs):
         self.slug = slugify(self.name)

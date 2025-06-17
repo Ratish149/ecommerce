@@ -95,6 +95,8 @@ class ProductFilter(django_filters.FilterSet):
         field_name='price', lookup_expr='lte')
     category = django_filters.CharFilter(
         field_name='category__slug', lookup_expr='exact')
+    subcategory = django_filters.CharFilter(
+        field_name='subcategory__slug', lookup_expr='exact')
     is_popular = django_filters.BooleanFilter(
         field_name='is_popular', lookup_expr='exact')
     is_featured = django_filters.BooleanFilter(
@@ -103,11 +105,11 @@ class ProductFilter(django_filters.FilterSet):
     class Meta:
         model = Product
         fields = ['name', 'min_price', 'max_price', 'category',
-                  'is_popular', 'is_featured']
+                  'subcategory', 'is_popular', 'is_featured']
 
 
 class ProductListCreateView(generics.ListCreateAPIView):
-    queryset = Product.objects.all().order_by('-created_at')
+    queryset = Product.objects.all().only().order_by('-created_at')
     serializer_class = ProductSerializer
     filter_backends = [django_filters.DjangoFilterBackend,
                        filters.SearchFilter, filters.OrderingFilter]
