@@ -17,14 +17,21 @@ from openpyxl import Workbook
 from django.http import HttpResponse
 from rest_framework import generics
 from .models import Product, ProductCategory, ProductSubCategory, Wishlist, ProductReview, ProductImage, Size
-from .serializers import ProductSerializer, CategorySerializer, SubCategorySerializer, ProductDetailSerializer, WishlistSerializer, ProductReviewDetailSerializer, ProductReviewSerializer, ProductImageSerializer, ProductImageSmallSerializer, SizeSerializer, ImportSerializer
+from .serializers import ProductSerializer, CategorySerializer, SubCategorySerializer, ProductDetailSerializer, WishlistSerializer, ProductReviewDetailSerializer, ProductReviewSerializer, ProductImageSerializer, ProductImageSmallSerializer, SizeSerializer, ImportSerializer, ProductListSerializer
 from django_filters import rest_framework as django_filters
 from rest_framework import filters
 from django.http import Http404
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
+from rest_framework.pagination import PageNumberPagination
 # Create your views here.
+
+
+class CustomPagination(PageNumberPagination):
+    page_size = 18
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 
 class CategoryListCreateView(generics.ListCreateAPIView):
@@ -109,14 +116,24 @@ class ProductFilter(django_filters.FilterSet):
 
 
 class ProductListCreateView(generics.ListCreateAPIView):
-    queryset = Product.objects.all().only().order_by('-created_at')
+    queryset = Product.objects.only(
+        'id', 'name', 'slug', 'market_price', 'price', 'is_popular', 'is_featured',
+        'discount', 'thumbnail_image', 'thumbnail_image_alt_description',
+        'category', 'subcategory'
+    ).select_related('category', 'subcategory').order_by('-created_at')
     serializer_class = ProductSerializer
     filter_backends = [django_filters.DjangoFilterBackend,
                        filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name']
     ordering_fields = ['name', 'price', '-name', '-price', '-created_at']
     filterset_class = ProductFilter
+    pagination_class = CustomPagination
     parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return ProductListSerializer
+        return ProductSerializer
 
 
 class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -151,7 +168,7 @@ class SimilarProductsView(generics.ListAPIView):
                 is_active=True
             ).exclude(
                 id=product.id
-            ).order_by('-created_at')[:3]  # Limit to 6 similar products
+            ).order_by('-created_at')[:3]  
             return similar_products
         except Product.DoesNotExist:
             return Product.objects.none()

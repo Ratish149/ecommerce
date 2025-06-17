@@ -96,6 +96,7 @@ class Product(models.Model):
         unique_together = ('name', 'subcategory')
         indexes = [
             models.Index(fields=['name']),
+            models.Index(fields=['slug']),
             models.Index(fields=['created_at']),
             models.Index(fields=['price']),
             models.Index(fields=['is_popular']),

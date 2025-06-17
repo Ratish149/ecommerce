@@ -264,6 +264,18 @@ class WishlistSerializer(serializers.ModelSerializer):
                   'product_id', 'created_at', 'updated_at']
 
 
+class ProductListSerializer(serializers.ModelSerializer):
+    category = CategorySerializer(read_only=True)
+    subcategory = SubCategorySerializer(read_only=True)
+
+    class Meta:
+        model = Product
+        fields = [
+            'id', 'name', 'slug', 'price', 'market_price', 'discount',
+            'is_popular', 'is_featured', 'thumbnail_image', 'thumbnail_image_alt_description', 'category', 'subcategory'
+        ]
+
+
 class ProductReviewSerializer(serializers.ModelSerializer):
     product_id = serializers.PrimaryKeyRelatedField(
         queryset=Product.objects.all(),
