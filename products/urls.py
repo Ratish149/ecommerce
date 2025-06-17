@@ -11,12 +11,12 @@ from .views import (
     ProductImageListCreateView,
     ProductImageRetrieveUpdateDestroyView,
     ProductReviewRetrieveUpdateDestroyView,
-    BulkProductUploadView,
     ProductExcelExportWithDropdownAPIView,
     SizeListCreateView,
     SizeRetrieveUpdateDestroyView,
     SubCategoryListCreateView,
     SubCategoryRetrieveUpdateDestroyView,
+    ProductExcelImportAPIView
 )
 
 urlpatterns = [
@@ -45,11 +45,10 @@ urlpatterns = [
          ProductReviewView.as_view(), name='product-review'),
     path('product-reviews/<int:id>/', ProductReviewRetrieveUpdateDestroyView.as_view(),
          name='product-review-retrieve-update-destroy'),
-    path('products/bulk-upload/', BulkProductUploadView.as_view(),
-         name='product-bulk-upload'),
-    path('download/product-template/', ProductExcelExportWithDropdownAPIView.as_view(),
-         name='product-template-download'),
     path('sizes/', SizeListCreateView.as_view(), name='size-list-create'),
     path('sizes/<int:id>/', SizeRetrieveUpdateDestroyView.as_view(),
          name='size-retrieve-update-destroy'),
+    path('download/product-template/', ProductExcelExportWithDropdownAPIView.as_view(),
+         name='product-template-download'),
+    path('product/bulk-upload/', ProductExcelImportAPIView.as_view(), name='product-import'),
 ]

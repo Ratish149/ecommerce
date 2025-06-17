@@ -47,7 +47,8 @@ class ProductImageSmallSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProductImage
-        fields = ['id', 'image', 'image_alt_description', 'color', 'product']
+        fields = ['id', 'image', 'image_alt_description',
+                  'color', 'stock', 'product']
 
     def get_image(self, obj):
         request = self.context.get('request')
@@ -60,12 +61,12 @@ class ProductImageSmallSerializer(serializers.ModelSerializer):
 
 class ProductImageSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
-    product_name = serializers.CharField(source='product.name', read_only=True)
+    is_in_stock = serializers.SerializerMethodField()
 
     class Meta:
         model = ProductImage
         fields = ['id', 'image', 'image_alt_description',
-                  'color', 'product', 'product_name']
+                  'color', 'stock', 'product', 'is_in_stock']
 
     def get_image(self, obj):
         request = self.context.get('request')
@@ -74,6 +75,9 @@ class ProductImageSerializer(serializers.ModelSerializer):
                 return f'/media/{obj.image.name}'
             return obj.image.url
         return None
+
+    def get_is_in_stock(self, obj):
+        return obj.stock > 0 if obj.stock is not None else False
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -151,11 +155,13 @@ class ProductSerializer(serializers.ModelSerializer):
                 break
 
             color = request.data.get(f'image_data[{index}][color]')
+            stock = request.data.get(f'image_data[{index}][image_stock]')
             ProductImage.objects.create(
                 product=product,
                 image=image_file,
                 image_alt_description=image_file.name,
-                color=color
+                color=color,
+                stock=stock
             )
             index += 1
 
@@ -166,8 +172,6 @@ class ProductSerializer(serializers.ModelSerializer):
         thumbnail_image = request.FILES.get(
             'thumbnail_image') if request else None
         size_ids = request.data.getlist('size_id') if request else []
-        delete_images = request.data.getlist(
-            'delete_images') if request else []
 
         # Update thumbnail image if provided
         if thumbnail_image:
@@ -187,11 +191,6 @@ class ProductSerializer(serializers.ModelSerializer):
         if size_ids:
             instance.size.set(size_ids)
 
-        # Delete specified images
-        if delete_images:
-            ProductImage.objects.filter(
-                id__in=delete_images, product=instance).delete()
-
         # Add new images
         index = 0
         while True:
@@ -200,11 +199,13 @@ class ProductSerializer(serializers.ModelSerializer):
                 break
 
             color = request.data.get(f'image_data[{index}][color]')
+            stock = request.data.get(f'image_data[{index}][image_stock]')
             ProductImage.objects.create(
                 product=instance,
                 image=image_file,
                 image_alt_description=image_file.name,
-                color=color
+                color=color,
+                stock=stock
             )
             index += 1
 
@@ -226,7 +227,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     thumbnail_image = serializers.SerializerMethodField()
     category = CategorySerializer(read_only=True)
     subcategory = SubCategorySerializer(read_only=True)
-    reviews = ProductReviewSmallSerializer(many=True, read_only=True)
+    reviews = ProductReviewSmallSerializer(
+        many=True, read_only=True, source='productreview_set')
 
     class Meta:
         model = Product
@@ -245,7 +247,7 @@ class ProductSmallSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = ['id', 'name', 'slug', 'market_price',
-                  'price', 'thumbnail_image', 'meta_title', 'meta_description', 'category', 'subcategory', 'reviews']
+                  'price', 'thumbnail_image', 'meta_title', 'meta_description', 'category', 'subcategory']
 
 
 class WishlistSerializer(serializers.ModelSerializer):
@@ -287,87 +289,5 @@ class ProductReviewDetailSerializer(serializers.ModelSerializer):
                   'rating', 'created_at', 'updated_at']
 
 
-class BulkProductUploadSerializer(serializers.Serializer):
+class ImportSerializer(serializers.Serializer):
     file = serializers.FileField()
-    file_type = serializers.ChoiceField(choices=['csv', 'excel'])
-
-    def validate_file(self, value):
-        if value.name.endswith('.csv') or value.name.endswith('.xlsx') or value.name.endswith('.xls'):
-            return value
-        raise serializers.ValidationError("File must be CSV or Excel format")
-
-    def process_file(self):
-        file = self.validated_data['file']
-        file_type = self.validated_data['file_type']
-
-        if file_type == 'csv':
-            df = pd.read_csv(file)
-        else:
-            df = pd.read_excel(file)
-
-        required_columns = ['name', 'description', 'market_price',
-                            'price', 'stock', 'category', 'subcategory']
-        missing_columns = [
-            col for col in required_columns if col not in df.columns]
-
-        if missing_columns:
-            raise serializers.ValidationError(
-                f"Missing required columns: {', '.join(missing_columns)}")
-
-        products = []
-        errors = []
-
-        for index, row in df.iterrows():
-            try:
-                # Get or create category
-                category, _ = ProductCategory.objects.get_or_create(
-                    name=row['category'],
-                    defaults={'description': row.get(
-                        'category_description', '')}
-                )
-
-                # Get or create subcategory
-                subcategory, _ = ProductSubCategory.objects.get_or_create(
-                    name=row['subcategory'],
-                    category=category,
-                    defaults={'description': row.get(
-                        'subcategory_description', '')}
-                )
-
-                # Create product
-                product_data = {
-                    'name': row['name'],
-                    'description': row['description'],
-                    'market_price': float(row['market_price']),
-                    'price': float(row['price']),
-                    'stock': int(row['stock']),
-                    'category': category,
-                    'subcategory': subcategory,
-                    'is_popular': row.get('is_popular', False),
-                    'is_featured': row.get('is_featured', False),
-                    'discount': float(row.get('discount', 0)),
-                    'is_active': row.get('is_active', True),
-                    'meta_title': row.get('meta_title', ''),
-                    'meta_description': row.get('meta_description', '')
-                }
-
-                # Create the product first
-                product = Product.objects.create(**product_data)
-
-                # Handle sizes if provided
-                if 'sizes' in row and pd.notna(row['sizes']):
-                    sizes = [s.strip() for s in str(row['sizes']).split(',')]
-                    size_objects = [Size.objects.get_or_create(name=s)[
-                        0] for s in sizes]
-                    product.size.set(size_objects)
-
-                products.append(product)
-
-            except Exception as e:
-                errors.append(f"Row {index + 2}: {str(e)}")
-
-        return {
-            'success': len(products),
-            'errors': errors,
-            'products': products
-        }

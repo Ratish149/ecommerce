@@ -1,3 +1,9 @@
+import csv
+from .serializers import ImportSerializer
+from .models import Product, ProductCategory, ProductSubCategory, Size, ProductImage
+import openpyxl
+from rest_framework.parsers import MultiPartParser
+from django.core.files.base import ContentFile
 import requests
 import os
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
@@ -11,7 +17,7 @@ from openpyxl import Workbook
 from django.http import HttpResponse
 from rest_framework import generics
 from .models import Product, ProductCategory, ProductSubCategory, Wishlist, ProductReview, ProductImage, Size
-from .serializers import ProductSerializer, CategorySerializer, SubCategorySerializer, ProductDetailSerializer, WishlistSerializer, ProductReviewDetailSerializer, ProductReviewSerializer, ProductImageSerializer, ProductImageSmallSerializer, BulkProductUploadSerializer, SizeSerializer
+from .serializers import ProductSerializer, CategorySerializer, SubCategorySerializer, ProductDetailSerializer, WishlistSerializer, ProductReviewDetailSerializer, ProductReviewSerializer, ProductImageSerializer, ProductImageSmallSerializer, SizeSerializer, ImportSerializer
 from django_filters import rest_framework as django_filters
 from rest_framework import filters
 from django.http import Http404
@@ -109,7 +115,6 @@ class ProductListCreateView(generics.ListCreateAPIView):
     ordering_fields = ['name', 'price', '-name', '-price', '-created_at']
     filterset_class = ProductFilter
     parser_classes = [MultiPartParser, FormParser, JSONParser]
-    
 
 
 class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -220,128 +225,99 @@ class ProductReviewRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIVi
     lookup_field = 'id'
 
 
-class BulkProductUploadView(APIView):
-    serializer_class = BulkProductUploadSerializer
-
-    def post(self, request, *args, **kwargs):
-        serializer = BulkProductUploadSerializer(data=request.data)
-        if serializer.is_valid():
-            try:
-                result = serializer.process_file()
-                # Pass request context to ProductSerializer
-                product_serializer = ProductSerializer(
-                    result['products'],
-                    many=True,
-                    context={'request': request}
-                )
-                return Response({
-                    'message': f'Successfully uploaded {result["success"]} products',
-                    'errors': result['errors'] if result['errors'] else None,
-                    'products': product_serializer.data
-                }, status=status.HTTP_201_CREATED)
-            except Exception as e:
-                return Response({
-                    'error': str(e)
-                }, status=status.HTTP_400_BAD_REQUEST)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
 class ProductExcelExportWithDropdownAPIView(APIView):
     def get(self, request, format=None):
-        # Get all products and categories
-        product = Product.objects.select_related(
-            'category', 'subcategory').all().first()
+        # Sample product
+        product = Product.objects.select_related('category', 'subcategory') \
+            .prefetch_related('images', 'size') \
+            .annotate(
+                image_count=Count('images'),
+                size_count=Count('size')
+        ) \
+            .filter(
+                category__isnull=False,
+                subcategory__isnull=False,
+                image_count__gt=0,
+                size_count__gt=0
+        ).first()
         categories = list(
-            ProductCategory.objects.all().values_list('name', flat=True))
+            ProductCategory.objects.values_list('name', flat=True))
         sub_categories = list(
-            ProductSubCategory.objects.all().values_list('name', flat=True))
-        sizes = list(Size.objects.all().values_list('name', flat=True))
+            ProductSubCategory.objects.values_list('name', flat=True))
+        sizes = list(Size.objects.values_list('name', flat=True))
 
-        # Prepare data for Excel
-        data = []
-        data.append({
-            'Product Name': "Product Name",
-            'Category': product.category.name if product.category else 'Category',
-            'Sub Category': product.subcategory.name if product.subcategory else 'Sub Category',
-            'Price': "999.00",
-            'Market Price': "599.00",
-            'Discount': '10',
-            'Stock': '100',
-            'Is popular': 'true' if product.is_popular else 'false',
-            'Is featured': 'true' if product.is_featured else 'false',
-            'Meta Title': 'Meta Title',
-            'Meta Description': 'Meta Description',
-            'Size': 'size1, size2',  # Example showing multiple sizes
-            'Thumbnail image': 'thumbnail_image_url',
-            'Thumbnail Image Alt Description': 'thumbnail_image_alt_description',
-            'Images': 'image1_url, image2_url',  # Example showing multiple images
-            'Description': 'Product description',
-        })
-
-        # Create Excel file with dropdown
+        # Excel setup
         output = io.BytesIO()
         wb = Workbook()
         ws = wb.active
         ws.title = "Products"
 
-        # Write headers
         headers = [
             'Product Name', 'Category', 'Sub Category', 'Price', 'Market Price', 'Discount',
-            'Stock', 'Is popular', 'Is featured', 'Meta Title', 'Meta Description',
-            'Size', 'Thumbnail image', 'Thumbnail Image Alt Description', 'Images', 'Description'
+            'Product Stock', 'Is popular', 'Is featured', 'Description', 'Meta Title', 'Meta Description',
+            'Size', 'Thumbnail image', 'Thumbnail Image Alt Description',
+            'Color', 'Stock (Color)', 'Images', 'Image Alt Description'
         ]
         ws.append(headers)
 
-        # Write product data
-        for item in data:
-            ws.append([item[header] for header in headers])
+        if product:
+            size_str = ', '.join([size.name for size in product.size.all()])
+            common_data = {
+                'Product Name': product.name if product.name else 'Product Name',
+                'Category': product.category.name if product.category else 'Category',
+                'Sub Category': product.subcategory.name if product.subcategory else 'Sub Category',
+                'Price': float(product.price or 0),
+                'Market Price': float(product.market_price or 0),
+                'Discount': float(product.discount or 0),
+                'Product Stock': product.stock if product.stock else 'Product Stock',
+                'Is popular': 'TRUE' if product.is_popular else 'FALSE',
+                'Is featured': 'TRUE' if product.is_featured else 'FALSE',
+                'Description': product.description or 'Product Description',
+                'Meta Title': product.meta_title or 'Product Meta Title',
+                'Meta Description': product.meta_description or 'Product Meta Description',
+                'Size': size_str if size_str else 'S,M,L',
+                'Thumbnail image': product.thumbnail_image.url if product.thumbnail_image else 'Thumbnail Image',
+                'Thumbnail Image Alt Description': product.thumbnail_image_alt_description or 'Thumbnail Alt Description',
+            }
 
-        # Add dropdown validation for Category column
-        dv = DataValidation(
-            type="list",
-            formula1=f'"{",".join(categories)}"',
-            allow_blank=True
-        )
-        dv.add(f'B2:B{len(data)+1}')
-        ws.add_data_validation(dv)
+            first = True
+            for img in product.images.all():
+                row = []
+                for h in headers:
+                    if h in ['Color', 'Stock (Color)', 'Images', 'Image Alt Description']:
+                        continue
+                    row.append(common_data[h] if first else '')
 
-        # Add dropdown validation for Sub Category column
-        dv = DataValidation(
-            type="list",
-            formula1=f'"{",".join(sub_categories)}"',
-            allow_blank=True
-        )
-        dv.add(f'C2:C{len(data)+1}')
-        ws.add_data_validation(dv)
+                row.append(img.color or '')
+                row.append(img.stock or '')
+                row.append(img.image.url if img.image else '')
+                row.append(img.image_alt_description or '')
 
-        # Add dropdown validation for boolean fields
+                ws.append(row)
+                first = False
+
+        # Dropdowns
+        ws.add_data_validation(DataValidation(
+            type="list", formula1=f'"{",".join(categories)}"', allow_blank=True, sqref="B2:B100"
+        ))
+        ws.add_data_validation(DataValidation(
+            type="list", formula1=f'"{",".join(sub_categories)}"', allow_blank=True, sqref="C2:C100"
+        ))
         for col in ['H', 'I']:
-            dv = DataValidation(
-                type="list",
-                formula1='"true,false"',
-                allow_blank=True
-            )
-            dv.add(f'{col}2:{col}{len(data)+1}')
-            ws.add_data_validation(dv)
-        # Auto-adjust column widths
-        for column in ws.columns:
-            max_length = 0
-            column_cells = [cell for cell in column]
-            for cell in column_cells:
-                try:
-                    if len(str(cell.value)) > max_length:
-                        max_length = len(str(cell.value))
-                except:
-                    pass
-            adjusted_width = (max_length + 2) * 1.2
-            ws.column_dimensions[column_cells[0].column_letter].width = adjusted_width
+            ws.add_data_validation(DataValidation(
+                type="list", formula1='"TRUE,FALSE"', allow_blank=True, sqref=f"{col}2:{col}100"
+            ))
 
-        # Save to BytesIO
+        # Auto column width
+        for col in ws.columns:
+            length = max(len(str(cell.value or '')) for cell in col)
+            ws.column_dimensions[col[0].column_letter].width = length + 2
+
+        # Return response
         wb.save(output)
-
-        # Prepare HTTP response
+        output.seek(0)
         response = HttpResponse(
-            output.getvalue(),
+            output.read(),
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
         response['Content-Disposition'] = 'attachment; filename="products_export.xlsx"'
@@ -431,3 +407,134 @@ class UploadProductExcelView(APIView):
                 return Response({"error": str(e), "product": row.get('Product Name')}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({"message": "Products created successfully."})
+
+
+class ProductExcelImportAPIView(APIView):
+    serializer_class = ImportSerializer
+    parser_classes = [MultiPartParser]
+
+    def post(self, request, format=None):
+        file = request.FILES.get('file')
+        if not file:
+            return Response({'error': 'No file uploaded'}, status=400)
+
+        file_name = file.name.lower()
+        try:
+            if file_name.endswith('.csv'):
+                rows = self.read_csv(file)
+
+            elif file_name.endswith(('.xlsx', '.xls')):
+                rows = self.read_excel(file)
+            else:
+                return Response({'error': 'Unsupported file type. Use CSV or Excel.'}, status=400)
+
+            return self.process_rows(rows)
+
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
+
+    def read_csv(self, file):
+        decoded_file = file.read().decode('utf-8-sig')  # ✅ decode with BOM-aware codec
+        io_string = io.StringIO(decoded_file)
+        reader = csv.DictReader(io_string)
+        cleaned_rows = []
+
+        for row in reader:
+            cleaned_row = {key.strip(): (value.strip() if isinstance(value, str) else value)
+                           for key, value in row.items()}
+            cleaned_rows.append(cleaned_row)
+
+        return cleaned_rows
+
+    def read_excel(self, file):
+        wb = openpyxl.load_workbook(file)
+        ws = wb.active
+        header = [cell.value for cell in ws[1]]
+        rows = []
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            row_data = dict(zip(header, row))
+            rows.append(row_data)
+        return rows
+
+    def process_rows(self, rows):
+        last_product = None
+        for row_data in rows:
+            name = row_data.get('Product Name')
+
+            if name:
+                category_name = str(row_data.get('Category') or '').strip()
+                category, _ = ProductCategory.objects.get_or_create(
+                    name=category_name)
+
+                subcategory_name = str(row_data.get(
+                    'Sub Category') or '').strip()
+                subcategory, _ = ProductSubCategory.objects.get_or_create(
+                    name=subcategory_name,
+                    category=category
+                )
+
+                product = Product.objects.create(
+                    name=name,
+                    slug=slugify(name),
+                    price=row_data.get('Price') or 0,
+                    market_price=row_data.get('Market Price') or 0,
+                    discount=row_data.get('Discount') or 0,
+                    stock=row_data.get('Product Stock') or 0,
+                    is_popular=(
+                        str(row_data.get('Is popular')).lower() == 'true'),
+                    is_featured=(
+                        str(row_data.get('Is featured')).lower() == 'true'),
+                    description=row_data.get('Description') or '',
+                    meta_title=row_data.get('Meta Title') or '',
+                    meta_description=row_data.get('Meta Description') or '',
+                    thumbnail_image_alt_description=row_data.get(
+                        'Thumbnail Image Alt Description') or '',
+                    category=category,
+                    subcategory=subcategory
+                )
+
+                sizes = [s.strip() for s in str(row_data.get(
+                    'Size') or '').split(',') if s.strip()]
+                for size_name in sizes:
+                    size_obj, _ = Size.objects.get_or_create(name=size_name)
+                    product.size.add(size_obj)
+
+                thumbnail_url = row_data.get('Thumbnail image')
+                if thumbnail_url:
+                    try:
+                        response = requests.get(thumbnail_url)
+                        if response.status_code == 200:
+                            filename = thumbnail_url.split(
+                                "/")[-1].split("?")[0] or f"{slugify(name)}-thumb.jpg"
+                            product.thumbnail_image.save(
+                                filename, ContentFile(response.content), save=True)
+                    except Exception as e:
+                        print(f"[Thumbnail] Failed for {name}: {e}")
+
+                last_product = product
+
+            product = last_product
+            if not product:
+                continue
+
+            img_url = row_data.get('Images')
+            if img_url:
+                try:
+                    response = requests.get(img_url)
+                    if response.status_code == 200:
+                        image_file = ContentFile(response.content)
+                        image_filename = img_url.split(
+                            "/")[-1].split("?")[0] or f"{slugify(product.name)}.jpg"
+                        image_instance = ProductImage.objects.create(
+                            product=product,
+                            color=row_data.get('Color') or '',
+                            stock=row_data.get('Stock (Color)') or 0,
+                            image_alt_description=row_data.get(
+                                'Image Alt Description') or '',
+                        )
+                        image_instance.image.save(
+                            image_filename, image_file, save=True)
+                except Exception as e:
+                    print(f"[Image] Failed for {product.name}: {e}")
+
+        return Response({'message': 'Products imported successfully'}, status=201)

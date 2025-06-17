@@ -40,6 +40,7 @@ class Size(models.Model):
     def __str__(self):
         return self.name
 
+
 class Color(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
@@ -47,11 +48,13 @@ class Color(models.Model):
     def __str__(self):
         return self.name
 
+
 class ProductImage(models.Model):
     image = models.FileField(upload_to='products/')
     image_alt_description = models.TextField(blank=True, null=True)
     color = models.CharField(max_length=100, blank=True, null=True)
-    product = models.ForeignKey(
+    stock = models.PositiveIntegerField(default=0, null=True, blank=True)
+    product = models.ForeignKey(  
         'Product', related_name='images', on_delete=models.CASCADE)
 
     def __str__(self):

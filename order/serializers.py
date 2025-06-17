@@ -11,10 +11,11 @@ class OrderItemSerializer(serializers.ModelSerializer):
         write_only=True,
         source='product'
     )
+    color = serializers.CharField(required=False, allow_null=True)
 
     class Meta:
         model = OrderItem
-        fields = ['product', 'product_id', 'quantity', 'price']
+        fields = ['product', 'product_id', 'quantity', 'price', 'color']
 
 
 class OrderSerializer(serializers.ModelSerializer):
@@ -36,14 +37,32 @@ class OrderSerializer(serializers.ModelSerializer):
         for item_data in items_data:
             product = item_data['product']
             quantity = item_data['quantity']
+            color = item_data.get('color')
 
-            # Decrease product stock
-            if product.stock >= quantity:
+            if color:
+                # Check color-specific stock with case-insensitive matching
+                product_image = product.images.filter(
+                    color__name__icontains=color).first()
+                if not product_image:
+                    raise serializers.ValidationError(
+                        f"Color {color} not available for product {product.name}")
+
+                if product_image.stock < quantity:
+                    raise serializers.ValidationError(
+                        f"Insufficient stock for product {product.name} in color {color}")
+
+                # Decrease color-specific stock
+                product_image.stock -= quantity
+                product_image.save()
+            else:
+                # Check overall product stock
+                if product.stock < quantity:
+                    raise serializers.ValidationError(
+                        f"Insufficient stock for product {product.name}")
+
+                # Decrease overall product stock
                 product.stock -= quantity
                 product.save()
-            else:
-                raise serializers.ValidationError(
-                    f"Insufficient stock for product {product.name}")
 
             OrderItem.objects.create(order=order, **item_data)
 
@@ -56,8 +75,15 @@ class OrderSerializer(serializers.ModelSerializer):
             # Restore stock from existing items before deleting them
             for existing_item in instance.items.all():
                 product = existing_item.product
-                product.stock += existing_item.quantity
-                product.save()
+                if existing_item.color:
+                    product_image = product.images.filter(
+                        color__name__icontains=existing_item.color).first()
+                    if product_image:
+                        product_image.stock += existing_item.quantity
+                        product_image.save()
+                else:
+                    product.stock += existing_item.quantity
+                    product.save()
 
             # Delete existing items
             instance.items.all().delete()
@@ -66,15 +92,32 @@ class OrderSerializer(serializers.ModelSerializer):
             for item_data in items_data:
                 product = item_data['product']
                 quantity = item_data['quantity']
+                color = item_data.get('color')
 
-                # Check if there's enough stock for new items
-                if product.stock >= quantity:
+                if color:
+                    # Check color-specific stock with case-insensitive matching
+                    product_image = product.images.filter(
+                        color__name__icontains=color).first()
+                    if not product_image:
+                        raise serializers.ValidationError(
+                            f"Color {color} not available for product {product.name}")
+
+                    if product_image.stock < quantity:
+                        raise serializers.ValidationError(
+                            f"Insufficient stock for product {product.name} in color {color}")
+
+                    # Decrease color-specific stock
+                    product_image.stock -= quantity
+                    product_image.save()
+                else:
+                    # Check overall product stock
+                    if product.stock < quantity:
+                        raise serializers.ValidationError(
+                            f"Insufficient stock for product {product.name}")
+
+                    # Decrease overall product stock
                     product.stock -= quantity
                     product.save()
-                else:
-                    # If there's not enough stock, restore all previous items and raise error
-                    raise serializers.ValidationError(
-                        f"Insufficient stock for product {product.name}")
 
                 OrderItem.objects.create(order=instance, **item_data)
 
