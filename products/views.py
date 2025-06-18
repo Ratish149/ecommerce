@@ -117,7 +117,7 @@ class ProductFilter(django_filters.FilterSet):
 
 class ProductListCreateView(generics.ListCreateAPIView):
     queryset = Product.objects.only(
-        'id', 'name', 'slug', 'market_price', 'price', 'is_popular', 'is_featured',
+        'id', 'name', 'slug', 'market_price', 'price', 'stock', 'is_popular', 'is_featured',
         'discount', 'thumbnail_image', 'thumbnail_image_alt_description',
         'category', 'subcategory'
     ).select_related('category', 'subcategory').order_by('-created_at')
@@ -168,7 +168,7 @@ class SimilarProductsView(generics.ListAPIView):
                 is_active=True
             ).exclude(
                 id=product.id
-            ).order_by('-created_at')[:3]  
+            ).order_by('-created_at')[:3]
             return similar_products
         except Product.DoesNotExist:
             return Product.objects.none()
