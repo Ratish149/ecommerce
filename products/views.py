@@ -17,7 +17,7 @@ from openpyxl import Workbook
 from django.http import HttpResponse
 from rest_framework import generics
 from .models import Product, ProductCategory, ProductSubCategory, Wishlist, ProductReview, ProductImage, Size
-from .serializers import ProductSerializer, CategorySerializer, SubCategorySerializer, ProductDetailSerializer, WishlistSerializer, ProductReviewDetailSerializer, ProductReviewSerializer, ProductImageSerializer, ProductImageSmallSerializer, SizeSerializer, ImportSerializer, ProductListSerializer
+from .serializers import ProductSerializer, CategorySerializer, SubCategorySerializer, ProductDetailSerializer, WishlistSerializer, ProductReviewDetailSerializer, ProductReviewSerializer, ProductImageSerializer, ProductImageSmallSerializer, SizeSerializer, ImportSerializer, ProductListSerializer, CategorySmallSerializer, SubCategorySmallSerializer
 from django_filters import rest_framework as django_filters
 from rest_framework import filters
 from django.http import Http404
@@ -35,40 +35,63 @@ class CustomPagination(PageNumberPagination):
 
 
 class CategoryListCreateView(generics.ListCreateAPIView):
-    queryset = ProductCategory.objects.all()
+    queryset = ProductCategory.objects.only(
+        'id', 'name', 'slug', 'description', 'image')
     serializer_class = CategorySerializer
+
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return CategorySmallSerializer
+        return CategorySerializer
 
 
 class CategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = ProductCategory.objects.all()
+    queryset = ProductCategory.objects.only(
+        'id', 'name', 'slug', 'description', 'image')
     serializer_class = CategorySerializer
     lookup_field = 'slug'
+
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return CategorySmallSerializer
+        return CategorySerializer
 
 
 class SubCategoryListCreateView(generics.ListCreateAPIView):
     queryset = ProductSubCategory.objects.all()
     serializer_class = SubCategorySerializer
 
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return SubCategorySmallSerializer
+        return SubCategorySerializer
+
     def get_queryset(self):
         category_slug = self.request.query_params.get('category_slug')
         if category_slug:
-            return ProductSubCategory.objects.filter(category__slug=category_slug)
+            return ProductSubCategory.objects.filter(category__slug=category_slug).only('id', 'name', 'slug', 'category', 'image').select_related('category')
         return ProductSubCategory.objects.all()
 
 
 class SubCategoryRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = ProductSubCategory.objects.all()
+    queryset = ProductSubCategory.objects.only(
+        'id', 'name', 'slug', 'category', 'image').select_related('category')
     serializer_class = SubCategorySerializer
     lookup_field = 'slug'
 
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return SubCategorySmallSerializer
+        return SubCategorySerializer
+
 
 class SizeListCreateView(generics.ListCreateAPIView):
-    queryset = Size.objects.all()
+    queryset = Size.objects.only('id', 'name', 'description', 'image')
     serializer_class = SizeSerializer
 
 
 class SizeRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Size.objects.all()
+    queryset = Size.objects.only('id', 'name', 'description', 'image')
     serializer_class = SizeSerializer
     lookup_field = 'id'
 
@@ -156,14 +179,18 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class SimilarProductsView(generics.ListAPIView):
-    serializer_class = ProductSerializer
+    serializer_class = ProductListSerializer
 
     def get_queryset(self):
         slug = self.kwargs.get('slug')
         try:
-            product = Product.objects.get(slug=slug)
+            product = Product.objects.only('id', 'category').get(slug=slug)
             # Get products from the same category, excluding the current product
-            similar_products = Product.objects.filter(
+            similar_products = Product.objects.only(
+                'id', 'name', 'slug', 'market_price', 'price', 'stock', 'is_popular', 'is_featured',
+                'discount', 'thumbnail_image', 'thumbnail_image_alt_description',
+                'category', 'subcategory'
+            ).select_related('category', 'subcategory').filter(
                 category=product.category,
                 is_active=True
             ).exclude(
@@ -175,7 +202,12 @@ class SimilarProductsView(generics.ListAPIView):
 
 
 class WishlistListCreateView(generics.ListCreateAPIView):
-    queryset = Wishlist.objects.all()
+    queryset = Wishlist.objects.only(
+        'id', 'user', 'product', 'created_at', 'updated_at'
+    ).select_related(
+        'user',
+        'product'
+    )
     serializer_class = WishlistSerializer
 
     def get_queryset(self):
@@ -186,7 +218,12 @@ class WishlistListCreateView(generics.ListCreateAPIView):
 
 
 class WishlistRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Wishlist.objects.all()
+    queryset = Wishlist.objects.only(
+        'id', 'user', 'product', 'created_at', 'updated_at'
+    ).select_related(
+        'user',
+        'product'
+    )
     serializer_class = WishlistSerializer
 
     def get_object(self):
@@ -216,7 +253,9 @@ class ProductReviewFilter(django_filters.FilterSet):
 
 
 class ProductReviewView(generics.ListCreateAPIView):
-    queryset = ProductReview.objects.all().order_by('-created_at')
+    queryset = ProductReview.objects.only(
+        'id', 'product', 'user', 'review', 'rating', 'created_at', 'updated_at'
+    ).select_related('product', 'user').order_by('-created_at')
     serializer_class = ProductReviewSerializer
     filter_backends = [django_filters.DjangoFilterBackend,]
     filterset_class = ProductReviewFilter
@@ -229,7 +268,7 @@ class ProductReviewView(generics.ListCreateAPIView):
     def get_queryset(self):
         slug = self.request.query_params.get('slug')
         try:
-            product = Product.objects.get(slug=slug)
+            product = Product.objects.only('id').get(slug=slug)
             return ProductReview.objects.filter(product=product)
         except Product.DoesNotExist:
             return ProductReview.objects.all()
@@ -239,7 +278,9 @@ class ProductReviewView(generics.ListCreateAPIView):
 
 
 class ProductReviewRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = ProductReview.objects.all()
+    queryset = ProductReview.objects.only(
+        'id', 'product', 'user', 'review', 'rating', 'created_at', 'updated_at'
+    ).select_related('product', 'user')
     serializer_class = ProductReviewSerializer
     lookup_field = 'id'
 

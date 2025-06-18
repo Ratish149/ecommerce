@@ -109,11 +109,11 @@ CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
-    'https://madonna-lawyers-script-takes.trycloudflare.com'
+    'https://reading-will-reports-base.trycloudflare.com'
 ]
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000',
-    'https://madonna-lawyers-script-takes.trycloudflare.com'
+    'https://reading-will-reports-base.trycloudflare.com'
 ]
 
 

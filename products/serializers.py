@@ -17,12 +17,39 @@ class CategorySerializer(serializers.ModelSerializer):
         return None
 
 
+class CategorySmallSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProductCategory
+        fields = ['id', 'name', 'slug', 'description', 'image']
+
+    def get_image(self, obj):
+        if obj.image:
+            return f'/media/{obj.image.name}'
+        return None
+
+
 class SubCategorySerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
 
     class Meta:
         model = ProductSubCategory
         fields = '__all__'
+
+    def get_image(self, obj):
+        if obj.image:
+            return f'/media/{obj.image.name}'
+        return None
+
+
+class SubCategorySmallSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+    category = CategorySmallSerializer(read_only=True)
+
+    class Meta:
+        model = ProductSubCategory
+        fields = ['id', 'name', 'slug', 'description', 'image', 'category']
 
     def get_image(self, obj):
         if obj.image:

@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from .models import Order
+from .models import Order, OrderItem
 from .serializers import OrderSerializer, OrderSmallSerializer
 from products.models import Product
 from django.db.models import Sum, Count
@@ -14,6 +14,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters as rest_filters
 from django.utils import timezone
 from django.db import models
+from django.db.models import Prefetch
 # Create your views here.
 
 
@@ -45,7 +46,41 @@ class OrderFilter(django_filters.FilterSet):
 
 
 class OrderView(ListCreateAPIView):
-    queryset = Order.objects.all().order_by('-created_at')
+    queryset = Order.objects.prefetch_related(
+        Prefetch(
+            'items',
+            queryset=OrderItem.objects.select_related(
+                'product',  # For product_id, product_name, product_slug, product_price
+                'size'     # For size field
+            ).only(
+                'product__id',
+                'product__name',
+                'product__slug',
+                'product__price',
+                'product__thumbnail_image',
+                'quantity',
+                'price',
+                'color',
+                'size__name'
+            )
+        )
+    ).only(
+        'id',
+        'full_name',
+        'order_number',
+        'status',
+        'shipping_address',
+        'city',
+        'state',
+        'zip_code',
+        'phone_number',
+        'email',
+        'total_amount',
+        'delivery_fee',
+        'created_at',
+        'updated_at'
+    ).order_by('-created_at')
+
     serializer_class = OrderSmallSerializer
     filter_backends = [DjangoFilterBackend,
                        rest_filters.SearchFilter, rest_filters.OrderingFilter]
@@ -101,13 +136,14 @@ class DashboardStats(APIView):
     def get(self, request):
 
         # Get total products
-        total_products = Product.objects.count()
+        total_products = Product.objects.only('id').count()
 
         # Get total orders
-        total_orders = Order.objects.count()
+        total_orders = Order.objects.only('id').count()
 
         # Get pending orders
-        pending_orders = Order.objects.filter(status='pending').count()
+        pending_orders = Order.objects.filter(
+            status='pending').only('id').count()
 
         # Get total revenue (sum of total_amount from all orders)
         total_revenue = Order.objects.aggregate(
@@ -148,7 +184,51 @@ class MyOrderView(ListAPIView):
     serializer_class = OrderSmallSerializer
 
     def get_queryset(self):
-        return Order.objects.filter(user=self.request.user)
+        return Order.objects.prefetch_related(
+            Prefetch(
+                'items',
+                queryset=OrderItem.objects.select_related(
+                    'product',  # For product_id, product_name, product_slug, product_price
+                    'size'     # For size field
+                ).only(
+                    'product__id',
+                    'product__name',
+                    'product__slug',
+                    'product__price',
+                    'product__thumbnail_image',
+                    'quantity',
+                    'price',
+                    'color',
+                    'size__name'
+                )
+            )
+        ).only(
+            'id',
+            'full_name',
+            'order_number',
+            'status',
+            'shipping_address',
+            'city',
+            'state',
+            'zip_code',
+            'phone_number',
+            'email',
+            'total_amount',
+            'delivery_fee',
+            'created_at',
+            'updated_at'
+        ).filter(user=self.request.user)
+
+
+class MyOrderStatusView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user_orders = Order.objects.filter(user=request.user)
+        status_counts = {}
+        for status, _ in Order.STATUS_CHOICES:
+            status_counts[status] = user_orders.filter(status=status).count()
+        return Response(status_counts)
 
 
 class RevenueView(ListAPIView):

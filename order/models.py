@@ -44,6 +44,16 @@ class Order(models.Model):
         else:
             super().save(*args, **kwargs)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['full_name']),
+            models.Index(fields=['phone_number']),
+            models.Index(fields=['order_number']),
+            models.Index(fields=['user']),
+            models.Index(fields=['status']),
+            models.Index(fields=['created_at']),
+        ]
+
 
 class OrderItem(models.Model):
     order = models.ForeignKey(
