@@ -140,10 +140,9 @@ class ProductFilter(django_filters.FilterSet):
 
 class ProductListCreateView(generics.ListCreateAPIView):
     queryset = Product.objects.only(
-        'id', 'name', 'slug', 'market_price', 'price', 'stock', 'is_popular', 'is_featured',
-        'discount', 'thumbnail_image', 'thumbnail_image_alt_description',
-        'category', 'subcategory'
-    ).select_related('category', 'subcategory').order_by('-created_at')
+        'id', 'name', 'slug', 'market_price', 'price', 'is_popular', 'is_featured',
+        'thumbnail_image', 'thumbnail_image_alt_description'
+    ).order_by('-created_at')
     serializer_class = ProductSerializer
     filter_backends = [django_filters.DjangoFilterBackend,
                        filters.SearchFilter, filters.OrderingFilter]
@@ -187,10 +186,9 @@ class SimilarProductsView(generics.ListAPIView):
             product = Product.objects.only('id', 'category').get(slug=slug)
             # Get products from the same category, excluding the current product
             similar_products = Product.objects.only(
-                'id', 'name', 'slug', 'market_price', 'price', 'stock', 'is_popular', 'is_featured',
-                'discount', 'thumbnail_image', 'thumbnail_image_alt_description',
-                'category', 'subcategory'
-            ).select_related('category', 'subcategory').filter(
+                'id', 'name', 'slug', 'market_price', 'price', 'is_popular', 'is_featured',
+                'thumbnail_image', 'thumbnail_image_alt_description'
+            ).filter(
                 category=product.category,
                 is_active=True
             ).exclude(

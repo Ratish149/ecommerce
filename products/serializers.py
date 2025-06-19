@@ -311,16 +311,13 @@ class WishlistSerializer(serializers.ModelSerializer):
 
 
 class ProductListSerializer(serializers.ModelSerializer):
-    category = CategorySerializer(read_only=True)
-    subcategory = SubCategorySerializer(read_only=True)
     reviews_count = serializers.SerializerMethodField()
     average_rating = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = [
-            'id', 'name', 'slug', 'price', 'market_price', 'stock', 'discount',
-            'is_popular', 'is_featured', 'thumbnail_image', 'thumbnail_image_alt_description', 'category', 'subcategory',
+            'id', 'name', 'slug', 'price', 'market_price', 'thumbnail_image', 'thumbnail_image_alt_description',
             'reviews_count', 'average_rating'
         ]
 
