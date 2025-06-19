@@ -52,6 +52,14 @@ class Blog(models.Model):
         self.slug = slugify(self.title)
         super().save(*args, **kwargs)
 
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['title']),
+            models.Index(fields=['slug']),
+            models.Index(fields=['category']),
+        ]
+
 
 class BlogComment(models.Model):
     blog = models.ForeignKey(

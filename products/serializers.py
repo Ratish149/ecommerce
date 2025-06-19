@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from accounts.serializers import UserSerializer
 from .models import Product, ProductCategory, ProductImage, Wishlist, ProductReview, ProductSubCategory, Size, Color
-import pandas as pd
+from django.db.models import Avg
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -294,13 +294,23 @@ class WishlistSerializer(serializers.ModelSerializer):
 class ProductListSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     subcategory = SubCategorySerializer(read_only=True)
+    reviews_count = serializers.SerializerMethodField()
+    average_rating = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = [
             'id', 'name', 'slug', 'price', 'market_price', 'stock', 'discount',
-            'is_popular', 'is_featured', 'thumbnail_image', 'thumbnail_image_alt_description', 'category', 'subcategory'
+            'is_popular', 'is_featured', 'thumbnail_image', 'thumbnail_image_alt_description', 'category', 'subcategory',
+            'reviews_count', 'average_rating'
         ]
+
+    def get_reviews_count(self, obj):
+        return ProductReview.objects.only('id').filter(product=obj).count()
+
+    def get_average_rating(self, obj):
+        return ProductReview.objects.only('id').filter(product=obj).aggregate(
+            avg_rating=Avg('rating'))['avg_rating'] or 0
 
 
 class ProductReviewSerializer(serializers.ModelSerializer):
