@@ -55,7 +55,7 @@ class BlogListCreateView(generics.ListCreateAPIView):
         'id', 'title', 'slug', 'thumbnail_image', 'thumbnail_image_alt_description',
         'meta_title', 'meta_description', 'created_at', 'updated_at',
         'category', 'author', 'author__first_name', 'author__last_name', 'author__username', 'author__email', 'author__id',
-        'category__name', 'category__slug', 'category__id',
+        'category__title', 'category__slug', 'category__id',
     ).select_related('category', 'author').prefetch_related('tags')
     serializer_class = BlogSerializer
     pagination_class = CustomPagination
