@@ -218,22 +218,41 @@ class ProductSerializer(serializers.ModelSerializer):
         if size_ids:
             instance.size.set(size_ids)
 
-        # Add new images
+        # Update or add images
         index = 0
         while True:
             image_file = request.FILES.get(f'image_data[{index}][image]')
-            if not image_file:
-                break
-
+            image_id = request.data.get(f'image_data[{index}][id]')
             color = request.data.get(f'image_data[{index}][color]')
             stock = request.data.get(f'image_data[{index}][image_stock]')
-            ProductImage.objects.create(
-                product=instance,
-                image=image_file,
-                image_alt_description=image_file.name,
-                color=color,
-                stock=stock
-            )
+            if not image_file and not image_id:
+                break
+
+            if image_id:
+                # Update existing image
+                try:
+                    product_image = ProductImage.objects.get(
+                        id=image_id, product=instance)
+                    if image_file:
+                        product_image.image.delete()
+                        product_image.image = image_file
+                        product_image.image_alt_description = image_file.name
+                    if color is not None:
+                        product_image.color = color
+                    if stock is not None:
+                        product_image.stock = stock
+                    product_image.save()
+                except ProductImage.DoesNotExist:
+                    pass  # Optionally handle this case
+            elif image_file:
+                # Add new image
+                ProductImage.objects.create(
+                    product=instance,
+                    image=image_file,
+                    image_alt_description=image_file.name,
+                    color=color,
+                    stock=stock
+                )
             index += 1
 
         return instance
