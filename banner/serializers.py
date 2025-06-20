@@ -11,12 +11,12 @@ class BannerImageSerializer(serializers.ModelSerializer):
 
 
 class BannerSerializer(serializers.ModelSerializer):
-    images = BannerImageSerializer(many=True)
+    image = BannerImageSerializer(many=True)
 
     class Meta:
         model = Banner
         fields = ['id', 'banner_type', 'is_active',
-                  'created_at', 'updated_at', 'images']
+                  'created_at', 'updated_at', 'image']
         read_only_fields = ['created_at', 'updated_at']
 
     def create(self, validated_data):
