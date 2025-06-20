@@ -20,7 +20,8 @@ class Banner(models.Model):
 
 
 class BannerImage(models.Model):
-    banner = models.ForeignKey(Banner, on_delete=models.CASCADE)
+    banner = models.ForeignKey(
+        Banner, related_name='images', on_delete=models.CASCADE)
     image = models.FileField(upload_to='banners/', null=True, blank=True)
     image_alt_description = models.TextField(blank=True, null=True)
     link = models.CharField(max_length=255, blank=True, null=True)

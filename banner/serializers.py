@@ -11,12 +11,12 @@ class BannerImageSerializer(serializers.ModelSerializer):
 
 
 class BannerSerializer(serializers.ModelSerializer):
-    image = BannerImageSerializer(many=True)
+    images = BannerImageSerializer(many=True)
 
     class Meta:
         model = Banner
         fields = ['id', 'banner_type', 'is_active',
-                  'created_at', 'updated_at', 'image']
+                  'created_at', 'updated_at', 'images']
         read_only_fields = ['created_at', 'updated_at']
 
     def create(self, validated_data):
@@ -35,11 +35,11 @@ class BannerSerializer(serializers.ModelSerializer):
         instance.save()
 
         # Update images
-        existing_ids = [img.id for img in instance.bannerimage_set.all()]
+        existing_ids = [img.id for img in instance.images.all()]
         sent_ids = [img.get('id') for img in images_data if img.get('id')]
 
         # Delete images not in the request
-        for img in instance.bannerimage_set.all():
+        for img in instance.images.all():
             if img.id not in sent_ids:
                 img.delete()
 
