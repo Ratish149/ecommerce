@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.db import models
-from .models import Product, ProductCategory, ProductImage, ProductSubCategory, Size, ProductReview
+from .models import Product, ProductCategory, ProductImage, ProductSubCategory, Size, ProductReview, ProductSubSubCategory
 from unfold.admin import ModelAdmin
 from tinymce.widgets import TinyMCE
 
@@ -11,6 +11,17 @@ class SizeAdmin(ModelAdmin):
 
 
 class ProductCategoryAdmin(ModelAdmin):
+    list_display = ('name', 'description')
+    search_fields = ('name',)
+
+    def formfield_for_dbfield(self, db_field, **kwargs):
+        if db_field.name == 'description':
+            return db_field.formfield(widget=TinyMCE())
+        return super().formfield_for_dbfield(db_field, **kwargs)
+
+
+class ProductSubSubCategoryAdmin(ModelAdmin):
+
     list_display = ('name', 'description')
     search_fields = ('name',)
 
@@ -60,5 +71,6 @@ class ProductReviewAdmin(ModelAdmin):
 admin.site.register(Product, ProductAdmin)
 admin.site.register(ProductCategory, ProductCategoryAdmin)
 admin.site.register(ProductSubCategory, ProductSubCategoryAdmin)
+admin.site.register(ProductSubSubCategory, ProductSubSubCategoryAdmin)
 admin.site.register(Size, SizeAdmin)
 admin.site.register(ProductReview, ProductReviewAdmin)

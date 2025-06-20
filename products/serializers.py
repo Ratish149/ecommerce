@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from accounts.serializers import UserSerializer
-from .models import Product, ProductCategory, ProductImage, Wishlist, ProductReview, ProductSubCategory, Size, Color
+from .models import Product, ProductCategory, ProductImage, ProductSubSubCategory, Wishlist, ProductReview, ProductSubCategory, Size, Color, ProductSubSubCategory
 from django.db.models import Avg
 
 
@@ -69,6 +69,20 @@ class SubCategorySmallSerializer(serializers.ModelSerializer):
         return None
 
 
+class SubSubCategoryListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductSubSubCategory
+        fields = ['id', 'name', 'slug',]
+
+
+class SubSubCategorySerializer(serializers.ModelSerializer):
+    subcategory = SubCategoryListSerializer(read_only=True)
+
+    class Meta:
+        model = ProductSubSubCategory
+        fields = ['id', 'name', 'slug', 'description', 'image', 'subcategory']
+
+
 class SizeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Size
@@ -135,6 +149,13 @@ class ProductSerializer(serializers.ModelSerializer):
         queryset=ProductSubCategory.objects.all(),
         write_only=True,
         source='subcategory',
+        required=False,
+        allow_null=True
+    )
+    subsubcategory_id = serializers.PrimaryKeyRelatedField(
+        queryset=ProductSubSubCategory.objects.all(),
+        write_only=True,
+        source='subsubcategory',
         required=False,
         allow_null=True
     )
@@ -285,6 +306,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     thumbnail_image = serializers.SerializerMethodField()
     category = CategorySerializer(read_only=True)
     subcategory = SubCategorySerializer(read_only=True)
+    subsubcategory = SubSubCategorySerializer(read_only=True)
     reviews = ProductReviewSmallSerializer(
         many=True, read_only=True, source='productreview_set')
 
@@ -301,11 +323,12 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 class ProductSmallSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     subcategory = SubCategorySerializer(read_only=True)
+    subsubcategory = SubSubCategorySerializer(read_only=True)
 
     class Meta:
         model = Product
         fields = ['id', 'name', 'slug', 'market_price',
-                  'price', 'thumbnail_image', 'meta_title', 'meta_description', 'category', 'subcategory']
+                  'price', 'thumbnail_image', 'meta_title', 'meta_description', 'category', 'subcategory', 'subsubcategory']
 
 
 class WishlistSerializer(serializers.ModelSerializer):
@@ -325,6 +348,7 @@ class WishlistSerializer(serializers.ModelSerializer):
 class ProductListSerializer(serializers.ModelSerializer):
     category = CategoryListSerializer(read_only=True)
     subcategory = SubCategoryListSerializer(read_only=True)
+    subsubcategory = SubSubCategoryListSerializer(read_only=True)
     reviews_count = serializers.SerializerMethodField()
     average_rating = serializers.SerializerMethodField()
 
@@ -332,7 +356,7 @@ class ProductListSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 'name', 'slug', 'price', 'market_price', 'thumbnail_image', 'thumbnail_image_alt_description', 'stock',
-            'reviews_count', 'average_rating', 'category', 'subcategory', 'is_featured', 'is_popular'
+            'reviews_count', 'average_rating', 'category', 'subcategory', 'subsubcategory', 'is_featured', 'is_popular'
         ]
 
     def get_reviews_count(self, obj):

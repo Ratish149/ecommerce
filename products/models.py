@@ -33,6 +33,23 @@ class ProductSubCategory(models.Model):
         super().save(*args, **kwargs)
 
 
+class ProductSubSubCategory(models.Model):
+    name = models.CharField(max_length=100)
+    slug = models.SlugField(null=True, blank=True, db_index=True)
+    description = models.TextField(blank=True)
+    image = models.FileField(
+        upload_to='subsubcategories/', null=True, blank=True)
+    subcategory = models.ForeignKey(
+        ProductSubCategory, related_name='subsubcategories', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+
 class Size(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
@@ -77,6 +94,8 @@ class Product(models.Model):
         ProductCategory, related_name='products', on_delete=models.CASCADE, null=True, blank=True)
     subcategory = models.ForeignKey(
         ProductSubCategory, related_name='products', on_delete=models.CASCADE, null=True, blank=True)
+    subsubcategory = models.ForeignKey(
+        ProductSubSubCategory, related_name='products', on_delete=models.CASCADE, null=True, blank=True)
     is_popular = models.BooleanField(default=False)
     is_featured = models.BooleanField(default=False)
     discount = models.DecimalField(
@@ -93,7 +112,7 @@ class Product(models.Model):
 
     class Meta:
         ordering = ['-created_at']
-        unique_together = ('name', 'subcategory')
+        unique_together = ('name', 'subcategory', 'subsubcategory')
         indexes = [
             models.Index(fields=['name']),
             models.Index(fields=['slug']),

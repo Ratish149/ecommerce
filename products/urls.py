@@ -16,14 +16,16 @@ from .views import (
     SizeRetrieveUpdateDestroyView,
     SubCategoryListCreateView,
     SubCategoryRetrieveUpdateDestroyView,
-    ProductExcelImportAPIView
+    ProductExcelImportAPIView,
+    SubSubCategoryListCreateView,
+    SubSubCategoryRetrieveUpdateDestroyView
 )
 
 urlpatterns = [
     path('products/', ProductListCreateView.as_view(), name='product-list-create'),
     path('products/<slug:slug>/similar/',
          SimilarProductsView.as_view(), name='similar-products'),
-    path('products/<slug:subcategory_slug>/<slug:slug>/',
+    path('products/<slug:subsubcategory_slug>/<slug:slug>/',
          ProductDetailView.as_view(), name='product-detail'),
     path('images/', ProductImageListCreateView.as_view(),
          name='product-image-list-create'),
@@ -37,6 +39,10 @@ urlpatterns = [
          name='subcategory-list-create'),
     path('subcategories/<slug:slug>/', SubCategoryRetrieveUpdateDestroyView.as_view(),
          name='subcategory-detail'),
+    path('subsubcategories/', SubSubCategoryListCreateView.as_view(),
+         name='subsubcategory-list-create'),
+    path('subsubcategories/<slug:slug>/', SubSubCategoryRetrieveUpdateDestroyView.as_view(),
+         name='subsubcategory-detail'),
     path('wishlist/', WishlistListCreateView.as_view(),
          name='wishlist-list-create'),
     path('wishlist/<int:id>/', WishlistRetrieveUpdateDestroyView.as_view(),
@@ -50,5 +56,6 @@ urlpatterns = [
          name='size-retrieve-update-destroy'),
     path('download/product-template/', ProductExcelExportWithDropdownAPIView.as_view(),
          name='product-template-download'),
-    path('product/bulk-upload/', ProductExcelImportAPIView.as_view(), name='product-import'),
+    path('product/bulk-upload/',
+         ProductExcelImportAPIView.as_view(), name='product-import'),
 ]

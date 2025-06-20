@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'products',
     'contact',
     'banner',
+    'drf_yasg',
 ]
 
 MIDDLEWARE = [
@@ -110,11 +111,11 @@ CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
-    'https://tumor-excluding-uzbekistan-east.trycloudflare.com'
+    'https://gazette-rv-compressed-mj.trycloudflare.com'
 ]
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000',
-    'https://tumor-excluding-uzbekistan-east.trycloudflare.com'
+    'https://gazette-rv-compressed-mj.trycloudflare.com'
 ]
 
 

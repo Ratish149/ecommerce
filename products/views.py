@@ -16,8 +16,8 @@ from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl import Workbook
 from django.http import HttpResponse
 from rest_framework import generics
-from .models import Product, ProductCategory, ProductSubCategory, Wishlist, ProductReview, ProductImage, Size
-from .serializers import ProductSerializer, CategorySerializer, SubCategorySerializer, ProductDetailSerializer, WishlistSerializer, ProductReviewDetailSerializer, ProductReviewSerializer, ProductImageSerializer, ProductImageSmallSerializer, SizeSerializer, ImportSerializer, ProductListSerializer, CategorySmallSerializer, SubCategorySmallSerializer
+from .models import Product, ProductCategory, ProductSubCategory, Wishlist, ProductReview, ProductImage, Size, ProductSubSubCategory
+from .serializers import ProductSerializer, CategorySerializer, SubCategorySerializer, ProductDetailSerializer, WishlistSerializer, ProductReviewDetailSerializer, ProductReviewSerializer, ProductImageSerializer, ProductImageSmallSerializer, SizeSerializer, ImportSerializer, ProductListSerializer, CategorySmallSerializer, SubCategorySmallSerializer, SubSubCategorySerializer, SubSubCategoryListSerializer
 from django_filters import rest_framework as django_filters
 from rest_framework import filters
 from django.http import Http404
@@ -85,6 +85,29 @@ class SubCategoryRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView
         return SubCategorySerializer
 
 
+class SubSubCategoryListCreateView(generics.ListCreateAPIView):
+    queryset = ProductSubSubCategory.objects.all()
+    serializer_class = SubSubCategorySerializer
+
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return SubSubCategorySerializer
+        return SubSubCategorySerializer
+
+    def get_queryset(self):
+        subcategory_slug = self.request.query_params.get('subcategory_slug')
+        if subcategory_slug:
+            return ProductSubSubCategory.objects.filter(subcategory__slug=subcategory_slug).only('id', 'name', 'slug', 'subcategory', 'image').select_related('subcategory')
+        return ProductSubSubCategory.objects.all()
+
+
+class SubSubCategoryRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = ProductSubSubCategory.objects.only(
+        'id', 'name', 'slug', 'subcategory', 'image').select_related('subcategory')
+    serializer_class = SubSubCategorySerializer
+    lookup_field = 'slug'
+
+
 class SizeListCreateView(generics.ListCreateAPIView):
     queryset = Size.objects.only('id', 'name', 'description')
     serializer_class = SizeSerializer
@@ -127,6 +150,8 @@ class ProductFilter(django_filters.FilterSet):
         field_name='category__slug', lookup_expr='exact')
     subcategory = django_filters.CharFilter(
         field_name='subcategory__slug', lookup_expr='exact')
+    subsubcategory = django_filters.CharFilter(
+        field_name='subsubcategory__slug', lookup_expr='exact')
     is_popular = django_filters.BooleanFilter(
         field_name='is_popular', lookup_expr='exact')
     is_featured = django_filters.BooleanFilter(
@@ -135,14 +160,14 @@ class ProductFilter(django_filters.FilterSet):
     class Meta:
         model = Product
         fields = ['name', 'min_price', 'max_price', 'category',
-                  'subcategory', 'is_popular', 'is_featured']
+                  'subcategory', 'subsubcategory', 'is_popular', 'is_featured']
 
 
 class ProductListCreateView(generics.ListCreateAPIView):
     queryset = Product.objects.only(
         'id', 'name', 'slug', 'market_price', 'price', 'is_popular', 'is_featured', 'stock',
-        'thumbnail_image', 'thumbnail_image_alt_description', 'category', 'subcategory', 'is_featured', 'is_popular'
-    ).select_related('category', 'subcategory').order_by('-created_at')
+        'thumbnail_image', 'thumbnail_image_alt_description', 'category', 'subcategory', 'subsubcategory', 'is_featured', 'is_popular'
+    ).select_related('category', 'subcategory', 'subsubcategory').order_by('-created_at')
     serializer_class = ProductSerializer
     filter_backends = [django_filters.DjangoFilterBackend,
                        filters.SearchFilter, filters.OrderingFilter]
@@ -163,11 +188,11 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = 'slug'
 
     def get_object(self):
-        subcategory_slug = self.kwargs.get('subcategory_slug')
+        subsubcategory_slug = self.kwargs.get('subsubcategory_slug')
         slug = self.kwargs.get('slug')
 
         try:
-            return Product.objects.get(subcategory__slug=subcategory_slug, slug=slug)
+            return Product.objects.get(subsubcategory__slug=subsubcategory_slug, slug=slug)
         except Product.DoesNotExist:
             raise Http404("Product not found")
 
@@ -289,6 +314,8 @@ class ProductExcelExportWithDropdownAPIView(APIView):
             ProductCategory.objects.values_list('name', flat=True))
         sub_categories = list(
             ProductSubCategory.objects.values_list('name', flat=True))
+        sub_sub_categories = list(
+            ProductSubSubCategory.objects.values_list('name', flat=True))
         sizes = list(Size.objects.values_list('name', flat=True))
 
         # Setup workbook
@@ -299,7 +326,7 @@ class ProductExcelExportWithDropdownAPIView(APIView):
 
         # Define headers
         headers = [
-            'Product Name', 'Category', 'Sub Category', 'Price', 'Market Price', 'Discount',
+            'Product Name', 'Category', 'Sub Category', 'Sub Sub Category', 'Price', 'Market Price', 'Discount',
             'Product Stock', 'Is popular', 'Is featured', 'Description', 'Meta Title', 'Meta Description',
             'Size', 'Thumbnail image', 'Thumbnail Image Alt Description',
             'Color', 'Stock (Color)', 'Images', 'Image Alt Description'
@@ -311,6 +338,7 @@ class ProductExcelExportWithDropdownAPIView(APIView):
             'Product Name': 'Product Name',
             'Category': 'Category',
             'Sub Category': 'Sub Category',
+            'Sub Sub Category': 'Sub Sub Category',
             'Price': 100,
             'Market Price': 100,
             'Discount': 100,
@@ -354,6 +382,12 @@ class ProductExcelExportWithDropdownAPIView(APIView):
             dv.add("C2:C100")
             ws.add_data_validation(dv)
 
+        if sub_sub_categories:
+            dv = DataValidation(
+                type="list", formula1=f'"{",".join(sub_sub_categories)}"', allow_blank=True)
+            dv.add("D2:D100")
+            ws.add_data_validation(dv)
+
         # Dropdown for booleans
         for col in ['H', 'I']:
             dv = DataValidation(
@@ -395,7 +429,9 @@ class UploadProductExcelView(APIView):
                 subcategory, _ = ProductSubCategory.objects.get_or_create(
                     name=row['Sub Category'], category=category
                 )
-
+                subsubcategory, _ = ProductSubSubCategory.objects.get_or_create(
+                    name=row['Sub Sub Category'], subcategory=subcategory
+                )
                 # Create Product instance
                 product = Product(
                     name=row['Product Name'],
@@ -410,6 +446,7 @@ class UploadProductExcelView(APIView):
                     meta_description=row.get('Meta Description', ''),
                     category=category,
                     subcategory=subcategory,
+                    subsubcategory=subsubcategory,
                 )
 
                 # Download and attach thumbnail image
@@ -526,6 +563,12 @@ class ProductExcelImportAPIView(APIView):
                     category=category
                 )
 
+                subsubcategory_name = str(row_data.get(
+                    'Sub Sub Category') or '').strip()
+                subsubcategory, _ = ProductSubSubCategory.objects.get_or_create(
+                    name=subsubcategory_name, subcategory=subcategory
+                )
+
                 product = Product.objects.create(
                     name=name,
                     slug=slugify(name),
@@ -543,7 +586,8 @@ class ProductExcelImportAPIView(APIView):
                     thumbnail_image_alt_description=row_data.get(
                         'Thumbnail Image Alt Description') or '',
                     category=category,
-                    subcategory=subcategory
+                    subcategory=subcategory,
+                    subsubcategory=subsubcategory
                 )
 
                 sizes = [s.strip() for s in str(row_data.get(
