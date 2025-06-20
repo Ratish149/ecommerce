@@ -14,6 +14,7 @@ urlpatterns = [
     path('api/', include('order.urls')),
     path('api/', include('blog.urls')),
     path('api/', include('contact.urls')),
+    path('api/', include('banner.urls')),
 ]
 
 if settings.DEBUG:

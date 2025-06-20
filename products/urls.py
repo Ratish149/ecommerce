@@ -23,7 +23,7 @@ urlpatterns = [
     path('products/', ProductListCreateView.as_view(), name='product-list-create'),
     path('products/<slug:slug>/similar/',
          SimilarProductsView.as_view(), name='similar-products'),
-    path('products/<slug:category_slug>/<slug:slug>/',
+    path('products/<slug:subcategory_slug>/<slug:slug>/',
          ProductDetailView.as_view(), name='product-detail'),
     path('images/', ProductImageListCreateView.as_view(),
          name='product-image-list-create'),

@@ -22,12 +22,18 @@ class CategorySmallSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProductCategory
-        fields = ['id', 'name', 'slug', 'description', 'image']
+        fields = ['id', 'name', 'slug', 'image']
 
     def get_image(self, obj):
         if obj.image:
             return f'/media/{obj.image.name}'
         return None
+
+
+class CategoryListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductCategory
+        fields = ['id', 'name', 'slug']
 
 
 class SubCategorySerializer(serializers.ModelSerializer):
@@ -41,6 +47,12 @@ class SubCategorySerializer(serializers.ModelSerializer):
         if obj.image:
             return f'/media/{obj.image.name}'
         return None
+
+
+class SubCategoryListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductSubCategory
+        fields = ['id', 'name', 'slug']
 
 
 class SubCategorySmallSerializer(serializers.ModelSerializer):
@@ -311,14 +323,16 @@ class WishlistSerializer(serializers.ModelSerializer):
 
 
 class ProductListSerializer(serializers.ModelSerializer):
+    category = CategoryListSerializer(read_only=True)
+    subcategory = SubCategoryListSerializer(read_only=True)
     reviews_count = serializers.SerializerMethodField()
     average_rating = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = [
-            'id', 'name', 'slug', 'price', 'market_price', 'thumbnail_image', 'thumbnail_image_alt_description',
-            'reviews_count', 'average_rating'
+            'id', 'name', 'slug', 'price', 'market_price', 'thumbnail_image', 'thumbnail_image_alt_description', 'stock',
+            'reviews_count', 'average_rating', 'category', 'subcategory', 'is_featured', 'is_popular'
         ]
 
     def get_reviews_count(self, obj):

@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     'tinymce',
     'products',
     'contact',
+    'banner',
 ]
 
 MIDDLEWARE = [
@@ -109,11 +110,11 @@ CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
-    'https://reading-will-reports-base.trycloudflare.com'
+    'https://tumor-excluding-uzbekistan-east.trycloudflare.com'
 ]
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000',
-    'https://reading-will-reports-base.trycloudflare.com'
+    'https://tumor-excluding-uzbekistan-east.trycloudflare.com'
 ]
 
 

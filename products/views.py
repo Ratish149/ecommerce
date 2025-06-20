@@ -86,12 +86,12 @@ class SubCategoryRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView
 
 
 class SizeListCreateView(generics.ListCreateAPIView):
-    queryset = Size.objects.only('id', 'name', 'description', 'image')
+    queryset = Size.objects.only('id', 'name', 'description')
     serializer_class = SizeSerializer
 
 
 class SizeRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Size.objects.only('id', 'name', 'description', 'image')
+    queryset = Size.objects.only('id', 'name', 'description')
     serializer_class = SizeSerializer
     lookup_field = 'id'
 
@@ -140,9 +140,9 @@ class ProductFilter(django_filters.FilterSet):
 
 class ProductListCreateView(generics.ListCreateAPIView):
     queryset = Product.objects.only(
-        'id', 'name', 'slug', 'market_price', 'price', 'is_popular', 'is_featured',
-        'thumbnail_image', 'thumbnail_image_alt_description'
-    ).order_by('-created_at')
+        'id', 'name', 'slug', 'market_price', 'price', 'is_popular', 'is_featured', 'stock',
+        'thumbnail_image', 'thumbnail_image_alt_description', 'category', 'subcategory', 'is_featured', 'is_popular'
+    ).select_related('category', 'subcategory').order_by('-created_at')
     serializer_class = ProductSerializer
     filter_backends = [django_filters.DjangoFilterBackend,
                        filters.SearchFilter, filters.OrderingFilter]
@@ -163,11 +163,11 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = 'slug'
 
     def get_object(self):
-        category_slug = self.kwargs.get('category_slug')
+        subcategory_slug = self.kwargs.get('subcategory_slug')
         slug = self.kwargs.get('slug')
 
         try:
-            return Product.objects.get(category__slug=category_slug, slug=slug)
+            return Product.objects.get(subcategory__slug=subcategory_slug, slug=slug)
         except Product.DoesNotExist:
             raise Http404("Product not found")
 

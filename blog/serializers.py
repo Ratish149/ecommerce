@@ -59,14 +59,13 @@ class BlogSerializer(serializers.ModelSerializer):
 
 
 class BlogSmallSerializer(serializers.ModelSerializer):
-    author = UserSerializer(read_only=True)
     category = BlogCategorySmallSerializer(read_only=True)
     tags = BlogTagSmallSerializer(many=True, read_only=True)
 
     class Meta:
         model = Blog
-        fields = ['id', 'author', 'title', 'slug', 'thumbnail_image', 'thumbnail_image_alt_description',
-                  'meta_title', 'meta_description', 'category', 'tags', 'created_at', 'updated_at']
+        fields = ['id', 'title', 'slug', 'thumbnail_image', 'thumbnail_image_alt_description',
+                  'category', 'tags', 'created_at', 'updated_at']
 
 
 class TestimonialSerializer(serializers.ModelSerializer):
