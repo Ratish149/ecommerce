@@ -28,6 +28,9 @@ class ProductSubCategory(models.Model):
     def __str__(self):
         return self.name
 
+    class Meta:
+        unique_together = ('name', 'category')
+
     def save(self, *args, **kwargs):
         self.slug = slugify(self.name)
         super().save(*args, **kwargs)
@@ -40,10 +43,13 @@ class ProductSubSubCategory(models.Model):
     image = models.FileField(
         upload_to='subsubcategories/', null=True, blank=True)
     subcategory = models.ForeignKey(
-        ProductSubCategory, related_name='subsubcategories', on_delete=models.CASCADE)
+        ProductSubCategory, related_name='subsubcategories', on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return self.name
+
+    class Meta:
+        unique_together = ('name', 'subcategory')
 
     def save(self, *args, **kwargs):
         self.slug = slugify(self.name)
@@ -112,7 +118,7 @@ class Product(models.Model):
 
     class Meta:
         ordering = ['-created_at']
-        unique_together = ('name', 'subcategory', 'subsubcategory')
+        unique_together = ('name', 'subsubcategory')
         indexes = [
             models.Index(fields=['name']),
             models.Index(fields=['slug']),

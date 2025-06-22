@@ -111,11 +111,11 @@ CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
-    'https://gazette-rv-compressed-mj.trycloudflare.com'
+    'https://prospect-distribute-possibilities-bids.trycloudflare.com'
 ]
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000',
-    'https://gazette-rv-compressed-mj.trycloudflare.com'
+    'https://prospect-distribute-possibilities-bids.trycloudflare.com'
 ]
 
 

@@ -76,11 +76,38 @@ class SubSubCategoryListSerializer(serializers.ModelSerializer):
 
 
 class SubSubCategorySerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+    subcategory_id = serializers.PrimaryKeyRelatedField(
+        queryset=ProductSubCategory.objects.all(),
+        write_only=True,
+        source='subcategory',
+        required=False,
+        allow_null=True
+    )
+
+    class Meta:
+        model = ProductSubSubCategory
+        fields = ['id', 'name', 'slug', 'description',
+                  'image', 'subcategory_id']
+
+    def get_image(self, obj):
+        if obj.image:
+            return f'/media/{obj.image.name}'
+        return None
+
+
+class SubSubCategorySmallSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
     subcategory = SubCategoryListSerializer(read_only=True)
 
     class Meta:
         model = ProductSubSubCategory
-        fields = ['id', 'name', 'slug', 'description', 'image', 'subcategory']
+        fields = ['id', 'name', 'slug', 'subcategory', 'image', 'description']
+
+    def get_image(self, obj):
+        if obj.image:
+            return f'/media/{obj.image.name}'
+        return None
 
 
 class SizeSerializer(serializers.ModelSerializer):

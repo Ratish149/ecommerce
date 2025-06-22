@@ -18,7 +18,8 @@ from .views import (
     SubCategoryRetrieveUpdateDestroyView,
     ProductExcelImportAPIView,
     SubSubCategoryListCreateView,
-    SubSubCategoryRetrieveUpdateDestroyView
+    SubSubCategoryRetrieveUpdateDestroyView,
+    CategoryExcelUploadView
 )
 
 urlpatterns = [
@@ -58,4 +59,6 @@ urlpatterns = [
          name='product-template-download'),
     path('product/bulk-upload/',
          ProductExcelImportAPIView.as_view(), name='product-import'),
+    path('category/bulk-upload/',
+         CategoryExcelUploadView.as_view(), name='category-import'),
 ]

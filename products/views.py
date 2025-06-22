@@ -1,5 +1,5 @@
 import csv
-from .serializers import ImportSerializer
+from .serializers import ImportSerializer, SubSubCategorySmallSerializer
 from .models import Product, ProductCategory, ProductSubCategory, Size, ProductImage
 import openpyxl
 from rest_framework.parsers import MultiPartParser
@@ -86,19 +86,20 @@ class SubCategoryRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView
 
 
 class SubSubCategoryListCreateView(generics.ListCreateAPIView):
-    queryset = ProductSubSubCategory.objects.all()
+    queryset = ProductSubSubCategory.objects.only(
+        'id', 'name', 'slug', 'subcategory', 'image').select_related('subcategory')
     serializer_class = SubSubCategorySerializer
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
-            return SubSubCategorySerializer
+            return SubSubCategorySmallSerializer
         return SubSubCategorySerializer
 
     def get_queryset(self):
         subcategory_slug = self.request.query_params.get('subcategory_slug')
         if subcategory_slug:
             return ProductSubSubCategory.objects.filter(subcategory__slug=subcategory_slug).only('id', 'name', 'slug', 'subcategory', 'image').select_related('subcategory')
-        return ProductSubSubCategory.objects.all()
+        return self.queryset
 
 
 class SubSubCategoryRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
@@ -635,3 +636,42 @@ class ProductExcelImportAPIView(APIView):
                     print(f"[Image] Failed for {product.name}: {e}")
 
         return Response({'message': 'Products imported successfully'}, status=201)
+
+
+class CategoryExcelUploadView(APIView):
+    serializer_class = ImportSerializer
+    parser_classes = [MultiPartParser]
+
+    def post(self, request, *args, **kwargs):
+        excel_file = request.FILES.get('file')
+        if not excel_file:
+            return Response({'error': 'No file provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            df = pd.read_excel(excel_file)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        for _, row in df.iterrows():
+            cat1_name = str(row.get('Category①')).strip()
+            cat2_name = str(row.get('Category②')).strip()
+            cat3_name = str(row.get('Category③')).strip(
+            ) if pd.notna(row.get('Category③')) else None
+
+            # Create or get Category①
+            cat1, _ = ProductCategory.objects.get_or_create(name=cat1_name)
+
+            # Create or get Category②
+            cat2, _ = ProductSubCategory.objects.get_or_create(
+                name=cat2_name,
+                category=cat1
+            )
+
+            # Create or get Category③ if present
+            if cat3_name:
+                ProductSubSubCategory.objects.get_or_create(
+                    name=cat3_name,
+                    subcategory=cat2
+                )
+
+        return Response({'message': 'Categories imported successfully'}, status=status.HTTP_201_CREATED)
