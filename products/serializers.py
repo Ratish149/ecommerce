@@ -2,6 +2,7 @@ from rest_framework import serializers
 from accounts.serializers import UserSerializer
 from .models import Product, ProductCategory, ProductImage, ProductSubSubCategory, Wishlist, ProductReview, ProductSubCategory, Size, Color, ProductSubSubCategory
 from django.db.models import Avg
+from rest_framework.validators import UniqueTogetherValidator
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -163,8 +164,9 @@ class ProductImageSerializer(serializers.ModelSerializer):
 class ProductSerializer(serializers.ModelSerializer):
     size = SizeSerializer(many=True, read_only=True)
     images = ProductImageSerializer(many=True, read_only=True)
-    category = CategorySerializer(read_only=True)
-    subcategory = SubCategorySerializer(read_only=True)
+    category = CategorySmallSerializer(read_only=True)
+    subcategory = SubCategorySmallSerializer(read_only=True)
+    subsubcategory = SubSubCategorySmallSerializer(read_only=True)
     category_id = serializers.PrimaryKeyRelatedField(
         queryset=ProductCategory.objects.all(),
         write_only=True,
@@ -200,6 +202,12 @@ class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = '__all__'
+        validators = [
+            UniqueTogetherValidator(
+                queryset=Product.objects.all(),
+                fields=['name', 'subsubcategory_id']
+            )
+        ]
 
     def get_thumbnail_image(self, obj):
         if obj.thumbnail_image:
