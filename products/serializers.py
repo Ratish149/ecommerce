@@ -391,7 +391,7 @@ class ProductListSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 'name', 'slug', 'price', 'market_price', 'thumbnail_image', 'thumbnail_image_alt_description', 'stock',
-            'reviews_count', 'average_rating', 'category', 'subcategory', 'subsubcategory', 'is_featured', 'is_popular'
+            'reviews_count', 'average_rating', 'category', 'subcategory', 'subsubcategory', 'is_featured', 'is_popular', 'is_active'
         ]
 
     def get_reviews_count(self, obj):

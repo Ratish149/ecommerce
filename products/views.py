@@ -167,7 +167,7 @@ class ProductFilter(django_filters.FilterSet):
 class ProductListCreateView(generics.ListCreateAPIView):
     queryset = Product.objects.only(
         'id', 'name', 'slug', 'market_price', 'price', 'is_popular', 'is_featured', 'stock',
-        'thumbnail_image', 'thumbnail_image_alt_description', 'category', 'subcategory', 'subsubcategory', 'is_featured', 'is_popular'
+        'thumbnail_image', 'thumbnail_image_alt_description', 'category', 'subcategory', 'subsubcategory', 'is_featured', 'is_popular', 'is_active'
     ).select_related('category', 'subcategory', 'subsubcategory').order_by('-created_at')
     serializer_class = ProductSerializer
     filter_backends = [django_filters.DjangoFilterBackend,
