@@ -46,6 +46,15 @@ class OrderSerializer(serializers.ModelSerializer):
             quantity = item_data['quantity']
             color = item_data.get('color')
 
+            if product.stock < quantity:
+                raise serializers.ValidationError(
+                    f"Insufficient stock for product {product.name}")
+
+            # Decrease overall product stock
+            product.stock -= quantity
+            product.save()
+
+            # Check color-specific stock with case-insensitive matching
             if color:
                 # Check color-specific stock with case-insensitive matching
                 product_image = product.images.filter(
