@@ -322,16 +322,24 @@ class ProductExcelExportWithDropdownAPIView(APIView):
             ProductSubSubCategory.objects.values_list('name', flat=True))
         sizes = list(Size.objects.values_list('name', flat=True))
 
-        # Setup workbook
         output = io.BytesIO()
         wb = Workbook()
         ws = wb.active
         ws.title = "Products"
 
+        # Add a reference sheet for dropdowns
+        ref_ws = wb.create_sheet(title="DropdownLists")
+        for idx, value in enumerate(categories, 1):
+            ref_ws.cell(row=idx, column=1, value=value)
+        for idx, value in enumerate(sub_categories, 1):
+            ref_ws.cell(row=idx, column=2, value=value)
+        for idx, value in enumerate(sub_sub_categories, 1):
+            ref_ws.cell(row=idx, column=3, value=value)
+
         # Define headers
         headers = [
             'Product Name', 'Category', 'Sub Category', 'Sub Sub Category', 'Price', 'Market Price', 'Discount',
-            'Product Stock', 'Is popular', 'Is featured', 'Description', 'Meta Title', 'Meta Description',
+            'Product Stock', 'Is popular', 'Is featured', 'Description', 'Highlight Description', 'Extra Description', 'Specifications', 'Meta Title', 'Meta Description',
             'Size', 'Thumbnail image', 'Thumbnail Image Alt Description',
             'Color', 'Stock (Color)', 'Images', 'Image Alt Description'
         ]
@@ -350,6 +358,9 @@ class ProductExcelExportWithDropdownAPIView(APIView):
             'Is popular': 'TRUE',
             'Is featured': 'FALSE',
             'Description': 'Product Description',
+            'Highlight Description': 'Product Highlight Description',
+            'Extra Description': 'Product Extra Description',
+            'Specifications': 'Product Specifications',
             'Meta Title': 'Product Meta Title',
             'Meta Description': 'Product Meta Description',
             'Size': 'S, M, L',
@@ -373,22 +384,33 @@ class ProductExcelExportWithDropdownAPIView(APIView):
 
             ws.append(row)
 
-        # Dropdowns for category and subcategory
+        # Data validation using reference sheet
+        from openpyxl.utils import quote_sheetname
+
         if categories:
             dv = DataValidation(
-                type="list", formula1=f'"{",".join(categories)}"', allow_blank=True)
+                type="list",
+                formula1=f"={quote_sheetname('DropdownLists')}!$A$1:$A${len(categories)}",
+                allow_blank=True
+            )
             dv.add("B2:B100")
             ws.add_data_validation(dv)
 
         if sub_categories:
             dv = DataValidation(
-                type="list", formula1=f'"{",".join(sub_categories)}"', allow_blank=True)
+                type="list",
+                formula1=f"={quote_sheetname('DropdownLists')}!$B$1:$B${len(sub_categories)}",
+                allow_blank=True
+            )
             dv.add("C2:C100")
             ws.add_data_validation(dv)
 
         if sub_sub_categories:
             dv = DataValidation(
-                type="list", formula1=f'"{",".join(sub_sub_categories)}"', allow_blank=True)
+                type="list",
+                formula1=f"={quote_sheetname('DropdownLists')}!$C$1:$C${len(sub_sub_categories)}",
+                allow_blank=True
+            )
             dv.add("D2:D100")
             ws.add_data_validation(dv)
 
@@ -404,7 +426,6 @@ class ProductExcelExportWithDropdownAPIView(APIView):
             max_len = max(len(str(cell.value or '')) for cell in col)
             ws.column_dimensions[col[0].column_letter].width = max_len + 2
 
-        # Return Excel file
         wb.save(output)
         output.seek(0)
         response = HttpResponse(
@@ -440,6 +461,9 @@ class UploadProductExcelView(APIView):
                 product = Product(
                     name=row['Product Name'],
                     description=row.get('Description', ''),
+                    highlight_description=row.get('Highlight Description', ''),
+                    extra_description=row.get('Extra Description', ''),
+                    specifications=row.get('Specifications', ''),
                     price=row['Price'],
                     market_price=row['Market Price'],
                     stock=row['Stock'],
@@ -585,6 +609,10 @@ class ProductExcelImportAPIView(APIView):
                     is_featured=(
                         str(row_data.get('Is featured')).lower() == 'true'),
                     description=row_data.get('Description') or '',
+                    highlight_description=row_data.get(
+                        'Highlight Description') or '',
+                    extra_description=row_data.get('Extra Description') or '',
+                    specifications=row_data.get('Specifications') or '',
                     meta_title=row_data.get('Meta Title') or '',
                     meta_description=row_data.get('Meta Description') or '',
                     thumbnail_image_alt_description=row_data.get(
