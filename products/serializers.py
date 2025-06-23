@@ -198,8 +198,6 @@ class ProductSerializer(serializers.ModelSerializer):
     )
     thumbnail_image = serializers.SerializerMethodField()
     is_wishlisted = serializers.SerializerMethodField()
-    reviews_count = serializers.SerializerMethodField()
-    average_rating = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -223,13 +221,6 @@ class ProductSerializer(serializers.ModelSerializer):
         if user:
             return Wishlist.objects.filter(user=user, product=obj).exists()
         return False
-
-    def get_reviews_count(self, obj):
-        return ProductReview.objects.only('id').filter(product=obj).count()
-
-    def get_average_rating(self, obj):
-        return ProductReview.objects.only('id').filter(product=obj).aggregate(
-            avg_rating=Avg('rating'))['avg_rating'] or 0
 
     def create(self, validated_data):
         request = self.context.get('request')
@@ -353,6 +344,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     subsubcategory = SubSubCategorySerializer(read_only=True)
     reviews = ProductReviewSmallSerializer(
         many=True, read_only=True, source='productreview_set')
+    reviews_count = serializers.SerializerMethodField()
+    average_rating = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -362,6 +355,13 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         if obj.thumbnail_image:
             return f'/media/{obj.thumbnail_image.name}'
         return None
+
+    def get_reviews_count(self, obj):
+        return ProductReview.objects.only('id').filter(product=obj).count()
+
+    def get_average_rating(self, obj):
+        return ProductReview.objects.only('id').filter(product=obj).aggregate(
+            avg_rating=Avg('rating'))['avg_rating'] or 0
 
 
 class ProductSmallSerializer(serializers.ModelSerializer):
