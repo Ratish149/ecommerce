@@ -71,7 +71,8 @@ class SubCategoryListCreateView(generics.ListCreateAPIView):
         category_slug = self.request.query_params.get('category_slug')
         if category_slug:
             return ProductSubCategory.objects.filter(category__slug=category_slug).only('id', 'name', 'slug', 'category', 'image').select_related('category')
-        return self.queryset
+        return ProductSubCategory.objects.only(
+            'id', 'name', 'slug', 'category', 'image').select_related('category')
 
 
 class SubCategoryRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
