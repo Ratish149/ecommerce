@@ -58,7 +58,8 @@ class CategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class SubCategoryListCreateView(generics.ListCreateAPIView):
-    queryset = ProductSubCategory.objects.all()
+    queryset = ProductSubCategory.objects.only(
+        'id', 'name', 'slug', 'category', 'image').select_related('category')
     serializer_class = SubCategorySerializer
 
     def get_serializer_class(self):
@@ -70,7 +71,7 @@ class SubCategoryListCreateView(generics.ListCreateAPIView):
         category_slug = self.request.query_params.get('category_slug')
         if category_slug:
             return ProductSubCategory.objects.filter(category__slug=category_slug).only('id', 'name', 'slug', 'category', 'image').select_related('category')
-        return ProductSubCategory.objects.all()
+        return self.queryset
 
 
 class SubCategoryRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
@@ -99,7 +100,8 @@ class SubSubCategoryListCreateView(generics.ListCreateAPIView):
         subcategory_slug = self.request.query_params.get('subcategory_slug')
         if subcategory_slug:
             return ProductSubSubCategory.objects.filter(subcategory__slug=subcategory_slug).only('id', 'name', 'slug', 'subcategory', 'image').select_related('subcategory')
-        return self.queryset
+        return ProductSubSubCategory.objects.only(
+            'id', 'name', 'slug', 'subcategory', 'image').select_related('subcategory')
 
 
 class SubSubCategoryRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
@@ -278,7 +280,7 @@ class ProductReviewFilter(django_filters.FilterSet):
 
 class ProductReviewView(generics.ListCreateAPIView):
     queryset = ProductReview.objects.only(
-        'id', 'product', 'user', 'review', 'rating', 'created_at', 'updated_at'
+        'id', 'product', 'user', 'review', 'rating', 'created_at'
     ).select_related('product', 'user').order_by('-created_at')
     serializer_class = ProductReviewSerializer
     filter_backends = [django_filters.DjangoFilterBackend,]

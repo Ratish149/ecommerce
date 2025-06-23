@@ -13,3 +13,12 @@ class Contact(models.Model):
 
     def __str__(self):
         return self.first_name
+
+
+class NewsLetter(models.Model):
+    email = models.EmailField(unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.email

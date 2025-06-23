@@ -55,6 +55,7 @@ urlpatterns = [
     path('sizes/', SizeListCreateView.as_view(), name='size-list-create'),
     path('sizes/<int:id>/', SizeRetrieveUpdateDestroyView.as_view(),
          name='size-retrieve-update-destroy'),
+
     path('download/product-template/', ProductExcelExportWithDropdownAPIView.as_view(),
          name='product-template-download'),
     path('product/bulk-upload/',

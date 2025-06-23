@@ -33,6 +33,12 @@ class BlogCommentSerializer(serializers.ModelSerializer):
         fields = ['id', 'blog', 'user', 'comment', 'created_at', 'updated_at']
 
 
+class BlogCommentSmallSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BlogComment
+        fields = ['id', 'blog', 'user', 'comment', 'created_at']
+
+
 class BlogSerializer(serializers.ModelSerializer):
     category = BlogCategorySmallSerializer(read_only=True)
     category_id = serializers.PrimaryKeyRelatedField(
@@ -61,11 +67,17 @@ class BlogSerializer(serializers.ModelSerializer):
 class BlogSmallSerializer(serializers.ModelSerializer):
     category = BlogCategorySmallSerializer(read_only=True)
     tags = BlogTagSmallSerializer(many=True, read_only=True)
+    thumbnail_image = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Blog
         fields = ['id', 'title', 'slug', 'thumbnail_image', 'thumbnail_image_alt_description',
                   'category', 'tags', 'created_at', 'updated_at']
+
+    def get_thumbnail_image(self, obj):
+        if obj.thumbnail_image:
+            return f'/media/{obj.thumbnail_image.name}'
+        return None
 
 
 class TestimonialSerializer(serializers.ModelSerializer):

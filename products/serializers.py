@@ -424,7 +424,7 @@ class ProductReviewDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductReview
         fields = ['id', 'product', 'user', 'review',
-                  'rating', 'created_at', 'updated_at']
+                  'rating', 'created_at']
 
 
 class ImportSerializer(serializers.Serializer):

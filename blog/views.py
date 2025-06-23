@@ -1,7 +1,7 @@
 from rest_framework import generics
 from rest_framework.pagination import PageNumberPagination
 from .models import BlogCategory, BlogComment, BlogTag, Blog, Testimonial
-from .serializers import BlogCategorySerializer, BlogCommentSerializer, BlogSmallSerializer, BlogTagSerializer, BlogSerializer, TestimonialSerializer
+from .serializers import BlogCategorySerializer, BlogCommentSerializer, BlogCommentSmallSerializer, BlogSmallSerializer, BlogTagSerializer, BlogSerializer, TestimonialSerializer
 from django_filters import rest_framework as django_filters
 from rest_framework import filters
 
@@ -9,23 +9,27 @@ from rest_framework import filters
 
 
 class BlogCategoryListCreateView(generics.ListCreateAPIView):
-    queryset = BlogCategory.objects.all()
+    queryset = BlogCategory.objects.only(
+        'id', 'title', 'slug', 'created_at', 'updated_at')
     serializer_class = BlogCategorySerializer
 
 
 class BlogCategoryRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = BlogCategory.objects.all()
+    queryset = BlogCategory.objects.only(
+        'id', 'title', 'slug', 'created_at', 'updated_at')
     serializer_class = BlogCategorySerializer
     lookup_field = 'slug'
 
 
 class BlogTagListCreateView(generics.ListCreateAPIView):
-    queryset = BlogTag.objects.all()
+    queryset = BlogTag.objects.only(
+        'id', 'title', 'created_at', 'updated_at')
     serializer_class = BlogTagSerializer
 
 
 class BlogTagRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = BlogTag.objects.all()
+    queryset = BlogTag.objects.only(
+        'id', 'title', 'created_at', 'updated_at')
     serializer_class = BlogTagSerializer
 
 
@@ -75,28 +79,40 @@ class BlogListCreateView(generics.ListCreateAPIView):
 
 
 class BlogRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Blog.objects.all()
+    queryset = Blog.objects.only(
+        'id', 'title', 'slug', 'thumbnail_image', 'thumbnail_image_alt_description', 'created_at', 'updated_at',
+        'category', 'category__title', 'category__slug'
+    ).select_related('category').prefetch_related('tags')
     serializer_class = BlogSerializer
     lookup_field = 'slug'
 
 
 class BlogCommentListCreateView(generics.ListCreateAPIView):
-    queryset = BlogComment.objects.all()
+    queryset = BlogComment.objects.only(
+        'id', 'blog', 'user', 'comment', 'created_at', 'updated_at')
     serializer_class = BlogCommentSerializer
+
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return BlogCommentSmallSerializer
+        return BlogCommentSerializer
 
 
 class BlogCommentRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = BlogComment.objects.all()
+    queryset = BlogComment.objects.only(
+        'id', 'blog', 'user', 'comment', 'created_at', 'updated_at')
     serializer_class = BlogCommentSerializer
     lookup_field = 'id'
 
 
 class TestimonialListCreateView(generics.ListCreateAPIView):
-    queryset = Testimonial.objects.all()
+    queryset = Testimonial.objects.only(
+        'id', 'name', 'designation', 'image', 'comment', 'created_at', 'updated_at')
     serializer_class = TestimonialSerializer
 
 
 class TestimonialRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Testimonial.objects.all()
+    queryset = Testimonial.objects.only(
+        'id', 'name', 'designation', 'image', 'comment', 'created_at', 'updated_at')
     serializer_class = TestimonialSerializer
     lookup_field = 'id'
