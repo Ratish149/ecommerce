@@ -87,7 +87,10 @@ class ProductImage(models.Model):
 class Product(models.Model):
     name = models.CharField(max_length=100)
     slug = models.SlugField(null=True, blank=True, max_length=225)
-    description = models.TextField(blank=True)
+    description = models.TextField(null=True, blank=True)
+    highlight_description = models.TextField(null=True, blank=True)
+    extra_description = models.TextField(null=True, blank=True)
+    specifications = models.TextField(null=True, blank=True)
     market_price = models.DecimalField(
         max_digits=10, decimal_places=2, default=0.00, null=True, blank=True)
     price = models.DecimalField(

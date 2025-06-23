@@ -48,7 +48,8 @@ class ProductImageInline(admin.TabularInline):
 
 
 class ProductAdmin(ModelAdmin):
-    list_display = ('name', 'category', 'price', 'stock', 'is_active')
+    list_display = ('name', 'category', 'price', 'stock',
+                    'is_active', 'is_featured', 'is_popular')
     list_filter = ('category', 'is_active')
     search_fields = ('name',)
     prepopulated_fields = {'slug': ('name',)}
@@ -56,7 +57,7 @@ class ProductAdmin(ModelAdmin):
     inlines = [ProductImageInline]
 
     def formfield_for_dbfield(self, db_field, **kwargs):
-        if db_field.name == 'description':
+        if db_field.name == 'description' or db_field.name == 'highlight_description' or db_field.name == 'extra_description' or db_field.name == 'specifications':
             return db_field.formfield(widget=TinyMCE())
         return super().formfield_for_dbfield(db_field, **kwargs)
 
