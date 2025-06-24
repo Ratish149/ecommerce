@@ -395,12 +395,14 @@ class ProductListSerializer(serializers.ModelSerializer):
     subsubcategory = SubSubCategoryListSerializer(read_only=True)
     reviews_count = serializers.SerializerMethodField()
     average_rating = serializers.SerializerMethodField()
+    is_color_available = serializers.SerializerMethodField()
+    is_size_available = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = [
             'id', 'name', 'slug', 'price', 'market_price', 'thumbnail_image', 'thumbnail_image_alt_description', 'stock',
-            'reviews_count', 'average_rating', 'category', 'subcategory', 'subsubcategory', 'is_featured', 'is_popular', 'is_active'
+            'reviews_count', 'average_rating', 'category', 'subcategory', 'subsubcategory', 'is_featured', 'is_popular', 'is_active', 'is_color_available', 'is_size_available'
         ]
 
     def get_reviews_count(self, obj):
@@ -409,6 +411,12 @@ class ProductListSerializer(serializers.ModelSerializer):
     def get_average_rating(self, obj):
         return ProductReview.objects.only('id').filter(product=obj).aggregate(
             avg_rating=Avg('rating'))['avg_rating'] or 0
+
+    def get_is_color_available(self, obj):
+        return obj.images.filter(color__isnull=False).exclude(color='').exists()
+
+    def get_is_size_available(self, obj):
+        return obj.size.exists()
 
 
 class ProductReviewSerializer(serializers.ModelSerializer):
