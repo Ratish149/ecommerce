@@ -390,11 +390,13 @@ class WishlistSerializer(serializers.ModelSerializer):
 
 
 class ProductListSerializer(serializers.ModelSerializer):
+    images = ProductImageSmallSerializer(many=True, read_only=True)
     category = CategoryListSerializer(read_only=True)
     subcategory = SubCategoryListSerializer(read_only=True)
     subsubcategory = SubSubCategoryListSerializer(read_only=True)
     reviews_count = serializers.SerializerMethodField()
     average_rating = serializers.SerializerMethodField()
+    size = SizeSerializer(many=True, read_only=True)
     is_color_available = serializers.SerializerMethodField()
     is_size_available = serializers.SerializerMethodField()
 
@@ -402,7 +404,8 @@ class ProductListSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 'name', 'slug', 'price', 'market_price', 'thumbnail_image', 'thumbnail_image_alt_description', 'stock',
-            'reviews_count', 'average_rating', 'category', 'subcategory', 'subsubcategory', 'is_featured', 'is_popular', 'is_active', 'is_color_available', 'is_size_available'
+            'reviews_count', 'average_rating', 'category', 'subcategory', 'subsubcategory', 'is_featured', 'is_popular', 'is_active', 'is_color_available', 'is_size_available',
+            'images', 'size'
         ]
 
     def get_reviews_count(self, obj):

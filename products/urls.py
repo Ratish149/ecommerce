@@ -19,7 +19,8 @@ from .views import (
     ProductExcelImportAPIView,
     SubSubCategoryListCreateView,
     SubSubCategoryRetrieveUpdateDestroyView,
-    CategoryExcelUploadView
+    CategoryExcelUploadView,
+    ProductGoogleSheetImportAPIView
 )
 
 urlpatterns = [
@@ -62,4 +63,7 @@ urlpatterns = [
          ProductExcelImportAPIView.as_view(), name='product-import'),
     path('category/bulk-upload/',
          CategoryExcelUploadView.as_view(), name='category-import'),
+    path("import-products/",
+         ProductGoogleSheetImportAPIView.as_view(), name="import-products"),
+
 ]

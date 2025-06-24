@@ -1,3 +1,5 @@
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 import csv
 from .serializers import ImportSerializer, SubSubCategorySmallSerializer
 from .models import Product, ProductCategory, ProductSubCategory, Size, ProductImage
@@ -706,3 +708,65 @@ class CategoryExcelUploadView(APIView):
                 )
 
         return Response({'message': 'Categories imported successfully'}, status=status.HTTP_201_CREATED)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class ProductGoogleSheetImportAPIView(APIView):
+    def post(self, request):
+        rows = request.data.get('rows')
+        if not rows:
+            return Response({'error': 'No data received'}, status=400)
+
+        for row in rows:
+            name = row.get('Product Name')
+            if not name:
+                continue
+
+            category, _ = ProductCategory.objects.get_or_create(
+                name=row.get('Category', '').strip())
+            subcategory, _ = ProductSubCategory.objects.get_or_create(
+                name=row.get('Sub Category', '').strip(), category=category)
+            subsubcategory, _ = ProductSubSubCategory.objects.get_or_create(
+                name=row.get('Sub Sub Category', '').strip(), subcategory=subcategory)
+
+            product = Product.objects.create(
+                name=name,
+                slug=slugify(name),
+                category=category,
+                subcategory=subcategory,
+                subsubcategory=subsubcategory,
+                price=row.get('Price') or 0,
+                market_price=row.get('Market Price') or 0,
+                discount=row.get('Discount') or 0,
+                stock=row.get('Product Stock') or 0,
+                is_popular=str(row.get('Is popular')).lower() == 'true',
+                is_featured=str(row.get('Is featured')).lower() == 'true',
+                description=row.get('Description') or ''
+            )
+
+            sizes = [s.strip()
+                     for s in str(row.get('Size', '')).split(',') if s.strip()]
+            for size in sizes:
+                size_obj, _ = Size.objects.get_or_create(name=size)
+                product.size.add(size_obj)
+
+            img_url = row.get('Images')
+            if img_url:
+                try:
+                    response = requests.get(img_url)
+                    if response.status_code == 200:
+                        image_file = ContentFile(response.content)
+                        image_name = img_url.split('/')[-1]
+                        image_instance = ProductImage.objects.create(
+                            product=product,
+                            color=row.get('Color', ''),
+                            stock=row.get('Stock (Color)', 0),
+                            image_alt_description=row.get(
+                                'Image Alt Description', '')
+                        )
+                        image_instance.image.save(
+                            image_name, image_file, save=True)
+                except Exception as e:
+                    print("Image upload error:", e)
+
+        return Response({'message': '✅ Products imported successfully!'})
