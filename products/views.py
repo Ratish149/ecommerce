@@ -1,3 +1,4 @@
+import re
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 import csv
@@ -59,10 +60,21 @@ class CategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
         return CategorySerializer
 
 
+class SubCategoryFilter(django_filters.FilterSet):
+    category = django_filters.CharFilter(
+        field_name='category__name', lookup_expr='icontains')
+
+    class Meta:
+        model = ProductSubCategory
+        fields = ['category']
+
+
 class SubCategoryListCreateView(generics.ListCreateAPIView):
     queryset = ProductSubCategory.objects.only(
         'id', 'name', 'slug', 'category', 'image').select_related('category')
     serializer_class = SubCategorySerializer
+    filter_backends = [django_filters.DjangoFilterBackend]
+    filterset_class = SubCategoryFilter
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
@@ -318,10 +330,19 @@ class ProductExcelExportWithDropdownAPIView(APIView):
     def get(self, request, format=None):
         categories = list(
             ProductCategory.objects.values_list('name', flat=True))
-        sub_categories = list(
-            ProductSubCategory.objects.values_list('name', flat=True))
-        sub_sub_categories = list(
-            ProductSubSubCategory.objects.values_list('name', flat=True))
+
+        # Get subcategories with their category names
+        sub_categories_with_category = []
+        for subcategory in ProductSubCategory.objects.select_related('category').all():
+            sub_categories_with_category.append(
+                f"{subcategory.name} ({subcategory.category.name})")
+
+        # Get sub-subcategories with their subcategory names
+        sub_sub_categories_with_subcategory = []
+        for subsubcategory in ProductSubSubCategory.objects.select_related('subcategory').all():
+            sub_sub_categories_with_subcategory.append(
+                f"{subsubcategory.name} ({subsubcategory.subcategory.name})")
+
         sizes = list(Size.objects.values_list('name', flat=True))
 
         output = io.BytesIO()
@@ -333,9 +354,9 @@ class ProductExcelExportWithDropdownAPIView(APIView):
         ref_ws = wb.create_sheet(title="DropdownLists")
         for idx, value in enumerate(categories, 1):
             ref_ws.cell(row=idx, column=1, value=value)
-        for idx, value in enumerate(sub_categories, 1):
+        for idx, value in enumerate(sub_categories_with_category, 1):
             ref_ws.cell(row=idx, column=2, value=value)
-        for idx, value in enumerate(sub_sub_categories, 1):
+        for idx, value in enumerate(sub_sub_categories_with_subcategory, 1):
             ref_ws.cell(row=idx, column=3, value=value)
 
         # Define headers
@@ -351,8 +372,8 @@ class ProductExcelExportWithDropdownAPIView(APIView):
         common_data = {
             'Product Name': 'Product Name',
             'Category': 'Category',
-            'Sub Category': 'Sub Category',
-            'Sub Sub Category': 'Sub Sub Category',
+            'Sub Category': 'Sub Category (Category)',
+            'Sub Sub Category': 'Sub Sub Category (Sub Category)',
             'Price': 100,
             'Market Price': 100,
             'Discount': 100,
@@ -398,19 +419,19 @@ class ProductExcelExportWithDropdownAPIView(APIView):
             dv.add("B2:B100")
             ws.add_data_validation(dv)
 
-        if sub_categories:
+        if sub_categories_with_category:
             dv = DataValidation(
                 type="list",
-                formula1=f"={quote_sheetname('DropdownLists')}!$B$1:$B${len(sub_categories)}",
+                formula1=f"={quote_sheetname('DropdownLists')}!$B$1:$B${len(sub_categories_with_category)}",
                 allow_blank=True
             )
             dv.add("C2:C100")
             ws.add_data_validation(dv)
 
-        if sub_sub_categories:
+        if sub_sub_categories_with_subcategory:
             dv = DataValidation(
                 type="list",
-                formula1=f"={quote_sheetname('DropdownLists')}!$C$1:$C${len(sub_sub_categories)}",
+                formula1=f"={quote_sheetname('DropdownLists')}!$C$1:$C${len(sub_sub_categories_with_subcategory)}",
                 allow_blank=True
             )
             dv.add("D2:D100")
@@ -436,239 +457,6 @@ class ProductExcelExportWithDropdownAPIView(APIView):
         )
         response['Content-Disposition'] = 'attachment; filename="products_export.xlsx"'
         return response
-
-
-class UploadProductExcelView(APIView):
-    parser_classes = [MultiPartParser]
-
-    def post(self, request):
-        excel_file = request.FILES.get('file')
-        if not excel_file:
-            return Response({"error": "No file uploaded."}, status=status.HTTP_400_BAD_REQUEST)
-
-        df = pd.read_excel(excel_file)
-
-        for _, row in df.iterrows():
-            try:
-                # Get or create category and subcategory
-                category, _ = ProductCategory.objects.get_or_create(
-                    name=row['Category'])
-                subcategory, _ = ProductSubCategory.objects.get_or_create(
-                    name=row['Sub Category'], category=category
-                )
-                subsubcategory, _ = ProductSubSubCategory.objects.get_or_create(
-                    name=row['Sub Sub Category'], subcategory=subcategory
-                )
-                # Create Product instance
-                product = Product(
-                    name=row['Product Name'],
-                    description=row.get('Description', ''),
-                    highlight_description=row.get('Highlight Description', ''),
-                    extra_description=row.get('Extra Description', ''),
-                    specifications=row.get('Specifications', ''),
-                    price=row['Price'],
-                    market_price=row['Market Price'],
-                    stock=row['Stock'],
-                    is_popular=row['Is popular'],
-                    is_featured=row['Is featured'],
-                    discount=row.get('Discount') or 0.0,
-                    meta_title=row.get('Meta Title', ''),
-                    meta_description=row.get('Meta Description', ''),
-                    category=category,
-                    subcategory=subcategory,
-                    subsubcategory=subsubcategory,
-                )
-
-                # Download and attach thumbnail image
-                thumb_url = row.get('Thumbnail image')
-                if thumb_url:
-                    thumb_response = requests.get(thumb_url, stream=True)
-                    if thumb_response.status_code == 200:
-                        thumb_temp = NamedTemporaryFile(delete=True)
-                        for chunk in thumb_response.iter_content(1024):
-                            thumb_temp.write(chunk)
-                        thumb_temp.flush()
-                        file_ext = os.path.splitext(thumb_url)[-1][:5]
-                        product.thumbnail_image.save(
-                            f"thumb_{slugify(product.name)}{file_ext}", File(thumb_temp))
-
-                # Save product to DB
-                product.save()
-
-                # Handle sizes
-                sizes = row.get('Size', '')
-                for size_name in sizes.split(','):
-                    size_name = size_name.strip()
-                    if size_name:
-                        size_obj, _ = Size.objects.get_or_create(
-                            name=size_name)
-                        product.size.add(size_obj)
-
-                # Handle product images
-                image_urls = row.get('Images', '').split(',')
-                for image_url in image_urls:
-                    image_url = image_url.strip()
-                    if image_url:
-                        img_response = requests.get(image_url, stream=True)
-                        if img_response.status_code == 200:
-                            img_temp = NamedTemporaryFile(delete=True)
-                            for chunk in img_response.iter_content(1024):
-                                img_temp.write(chunk)
-                            img_temp.flush()
-                            ext = os.path.splitext(image_url)[-1][:5]
-                            ProductImage.objects.create(
-                                product=product,
-                                image=File(
-                                    img_temp, name=f"img_{slugify(product.name)}{ext}"),
-                                name=f"img_{slugify(product.name)}"
-                            )
-
-            except Exception as e:
-                return Response({"error": str(e), "product": row.get('Product Name')}, status=status.HTTP_400_BAD_REQUEST)
-
-        return Response({"message": "Products created successfully."})
-
-
-class ProductExcelImportAPIView(APIView):
-    serializer_class = ImportSerializer
-    parser_classes = [MultiPartParser]
-
-    def post(self, request, format=None):
-        file = request.FILES.get('file')
-        if not file:
-            return Response({'error': 'No file uploaded'}, status=400)
-
-        file_name = file.name.lower()
-        try:
-            if file_name.endswith('.csv'):
-                rows = self.read_csv(file)
-
-            elif file_name.endswith(('.xlsx', '.xls')):
-                rows = self.read_excel(file)
-            else:
-                return Response({'error': 'Unsupported file type. Use CSV or Excel.'}, status=400)
-
-            return self.process_rows(rows)
-
-        except Exception as e:
-            return Response({'error': str(e)}, status=500)
-
-    def read_csv(self, file):
-        decoded_file = file.read().decode('utf-8-sig')  # ✅ decode with BOM-aware codec
-        io_string = io.StringIO(decoded_file)
-        reader = csv.DictReader(io_string)
-        cleaned_rows = []
-
-        for row in reader:
-            cleaned_row = {key.strip(): (value.strip() if isinstance(value, str) else value)
-                           for key, value in row.items()}
-            cleaned_rows.append(cleaned_row)
-
-        return cleaned_rows
-
-    def read_excel(self, file):
-        wb = openpyxl.load_workbook(file)
-        ws = wb.active
-        header = [cell.value for cell in ws[1]]
-        rows = []
-        for row in ws.iter_rows(min_row=2, values_only=True):
-            row_data = dict(zip(header, row))
-            rows.append(row_data)
-        return rows
-
-    def process_rows(self, rows):
-        last_product = None
-        for row_data in rows:
-            name = row_data.get('Product Name')
-
-            if name:
-                category_name = str(row_data.get('Category') or '').strip()
-                category, _ = ProductCategory.objects.get_or_create(
-                    name=category_name)
-
-                subcategory_name = str(row_data.get(
-                    'Sub Category') or '').strip()
-                subcategory, _ = ProductSubCategory.objects.get_or_create(
-                    name=subcategory_name,
-                    category=category
-                )
-
-                subsubcategory_name = str(row_data.get(
-                    'Sub Sub Category') or '').strip()
-                subsubcategory, _ = ProductSubSubCategory.objects.get_or_create(
-                    name=subsubcategory_name, subcategory=subcategory
-                )
-
-                product = Product.objects.create(
-                    name=name,
-                    slug=slugify(name),
-                    price=row_data.get('Price') or 0,
-                    market_price=row_data.get('Market Price') or 0,
-                    discount=row_data.get('Discount') or 0,
-                    stock=row_data.get('Product Stock') or 0,
-                    is_popular=(
-                        str(row_data.get('Is popular')).lower() == 'true'),
-                    is_featured=(
-                        str(row_data.get('Is featured')).lower() == 'true'),
-                    description=row_data.get('Description') or '',
-                    highlight_description=row_data.get(
-                        'Highlight Description') or '',
-                    extra_description=row_data.get('Extra Description') or '',
-                    specifications=row_data.get('Specifications') or '',
-                    meta_title=row_data.get('Meta Title') or '',
-                    meta_description=row_data.get('Meta Description') or '',
-                    thumbnail_image_alt_description=row_data.get(
-                        'Thumbnail Image Alt Description') or '',
-                    category=category,
-                    subcategory=subcategory,
-                    subsubcategory=subsubcategory
-                )
-
-                sizes = [s.strip() for s in str(row_data.get(
-                    'Size') or '').split(',') if s.strip()]
-                for size_name in sizes:
-                    size_obj, _ = Size.objects.get_or_create(name=size_name)
-                    product.size.add(size_obj)
-
-                thumbnail_url = row_data.get('Thumbnail image')
-                if thumbnail_url:
-                    try:
-                        response = requests.get(thumbnail_url)
-                        if response.status_code == 200:
-                            filename = thumbnail_url.split(
-                                "/")[-1].split("?")[0] or f"{slugify(name)}-thumb.jpg"
-                            product.thumbnail_image.save(
-                                filename, ContentFile(response.content), save=True)
-                    except Exception as e:
-                        print(f"[Thumbnail] Failed for {name}: {e}")
-
-                last_product = product
-
-            product = last_product
-            if not product:
-                continue
-
-            img_url = row_data.get('Images')
-            if img_url:
-                try:
-                    response = requests.get(img_url)
-                    if response.status_code == 200:
-                        image_file = ContentFile(response.content)
-                        image_filename = img_url.split(
-                            "/")[-1].split("?")[0] or f"{slugify(product.name)}.jpg"
-                        image_instance = ProductImage.objects.create(
-                            product=product,
-                            color=row_data.get('Color') or '',
-                            stock=row_data.get('Stock (Color)') or 0,
-                            image_alt_description=row_data.get(
-                                'Image Alt Description') or '',
-                        )
-                        image_instance.image.save(
-                            image_filename, image_file, save=True)
-                except Exception as e:
-                    print(f"[Image] Failed for {product.name}: {e}")
-
-        return Response({'message': 'Products imported successfully'}, status=201)
 
 
 class CategoryExcelUploadView(APIView):
@@ -710,6 +498,165 @@ class CategoryExcelUploadView(APIView):
         return Response({'message': 'Categories imported successfully'}, status=status.HTTP_201_CREATED)
 
 
+def clean_name(name):
+    """Removes content within parentheses and trims spaces."""
+    return re.sub(r'\s*\(.*?\)', '', name or '').strip()
+
+
+def get_or_create_category_hierarchy(row):
+    category_name = clean_name(row.get('Category'))
+    subcategory_name = clean_name(row.get('Sub Category'))
+    subsubcategory_name = clean_name(row.get('Sub Sub Category'))
+
+    category, _ = ProductCategory.objects.get_or_create(name=category_name)
+    subcategory, _ = ProductSubCategory.objects.get_or_create(
+        name=subcategory_name, category=category)
+    subsubcategory, _ = ProductSubSubCategory.objects.get_or_create(
+        name=subsubcategory_name, subcategory=subcategory)
+    return category, subcategory, subsubcategory
+
+
+def assign_sizes(product, size_str):
+    sizes = [s.strip() for s in str(size_str or '').split(',') if s.strip()]
+    for size_name in sizes:
+        size_obj, _ = Size.objects.get_or_create(name=size_name)
+        product.size.add(size_obj)
+
+
+def save_image_from_url(instance, field_name, url, fallback_name):
+    if url:
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                filename = url.split("/")[-1].split("?")[0] or fallback_name
+                getattr(instance, field_name).save(
+                    filename, ContentFile(response.content), save=True)
+        except Exception as e:
+            print(
+                f"[{field_name}] Failed for {getattr(instance, 'name', 'unknown')}: {e}")
+
+
+def create_product_from_row(row, category, subcategory, subsubcategory):
+    product = Product.objects.create(
+        name=row.get('Product Name'),
+        slug=slugify(row.get('Product Name')),
+        price=row.get('Price') or 0,
+        market_price=row.get('Market Price') or 0,
+        discount=row.get('Discount') or 0,
+        stock=row.get('Product Stock') or 0,
+        is_popular=str(row.get('Is popular')).lower() == 'true',
+        is_featured=str(row.get('Is featured')).lower() == 'true',
+        description=row.get('Description') or '',
+        highlight_description=row.get('Highlight Description') or row.get(
+            'Product Hightlight Description') or '',
+        extra_description=row.get('Extra Description') or row.get(
+            'Product Extra Description') or '',
+        specifications=row.get('Specifications') or row.get(
+            'Product Specifications') or '',
+        meta_title=row.get('Meta Title') or row.get(
+            'Product Meta Title') or '',
+        meta_description=row.get('Meta Description') or row.get(
+            'Product Meta Description') or '',
+        thumbnail_image_alt_description=row.get(
+            'Thumbnail Image Alt Description') or '',
+        category=category,
+        subcategory=subcategory,
+        subsubcategory=subsubcategory
+    )
+    assign_sizes(product, row.get('Size'))
+    save_image_from_url(product, 'thumbnail_image', row.get(
+        'Thumbnail image'), f"{slugify(product.name)}-thumb.jpg")
+    return product
+
+
+def create_product_image(product, img_data):
+    img_url = img_data.get('Images')
+    if img_url:
+        try:
+            response = requests.get(img_url)
+            if response.status_code == 200:
+                image_file = ContentFile(response.content)
+                image_filename = img_url.split(
+                    "/")[-1].split("?")[0] or f"{slugify(product.name)}.jpg"
+                image_instance = ProductImage.objects.create(
+                    product=product,
+                    color=img_data.get('Color', ''),
+                    stock=img_data.get('Stock', 0) or img_data.get(
+                        'Stock (Color)', 0) or 0,
+                    image_alt_description=img_data.get(
+                        'Image Alt Description', '') or img_data.get('Image Alt Description') or '',
+                )
+                image_instance.image.save(
+                    image_filename, image_file, save=True)
+        except Exception as e:
+            print(f"[Image] Failed for {product.name}: {e}")
+
+
+class ProductExcelImportAPIView(APIView):
+    serializer_class = ImportSerializer
+    parser_classes = [MultiPartParser]
+
+    def post(self, request, format=None):
+        file = request.FILES.get('file')
+        if not file:
+            return Response({'error': 'No file uploaded'}, status=400)
+
+        file_name = file.name.lower()
+        try:
+            if file_name.endswith('.csv'):
+                rows = self.read_csv(file)
+            elif file_name.endswith(('.xlsx', '.xls')):
+                rows = self.read_excel(file)
+            else:
+                return Response({'error': 'Unsupported file type. Use CSV or Excel.'}, status=400)
+            return self.process_rows(rows)
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
+
+    def read_csv(self, file):
+        decoded_file = file.read().decode('utf-8-sig')  # ✅ decode with BOM-aware codec
+        io_string = io.StringIO(decoded_file)
+        reader = csv.DictReader(io_string)
+        cleaned_rows = []
+
+        for row in reader:
+            cleaned_row = {key.strip(): (value.strip() if isinstance(value, str) else value)
+                           for key, value in row.items()}
+            cleaned_rows.append(cleaned_row)
+
+        return cleaned_rows
+
+    def read_excel(self, file):
+        wb = openpyxl.load_workbook(file)
+        ws = wb.active
+        header = [cell.value for cell in ws[1]]
+        rows = []
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            row_data = dict(zip(header, row))
+            rows.append(row_data)
+        return rows
+
+    def process_rows(self, rows):
+        last_product = None
+        for row_data in rows:
+            name = row_data.get('Product Name')
+            if name:
+                category, subcategory, subsubcategory = get_or_create_category_hierarchy(
+                    row_data)
+                # Check if product with same name and subcategory exists
+                if Product.objects.filter(name=name, subcategory=subcategory).exists():
+                    last_product = None
+                    continue
+                product = create_product_from_row(
+                    row_data, category, subcategory, subsubcategory)
+                last_product = product
+            product = last_product
+            if not product:
+                continue
+            create_product_image(product, row_data)
+        return Response({'message': 'Products imported successfully'}, status=201)
+
+
 @method_decorator(csrf_exempt, name='dispatch')
 class ProductGoogleSheetImportAPIView(APIView):
     def post(self, request):
@@ -717,56 +664,43 @@ class ProductGoogleSheetImportAPIView(APIView):
         if not rows:
             return Response({'error': 'No data received'}, status=400)
 
+        products = []
+        current_product_data = None
+
         for row in rows:
             name = row.get('Product Name')
-            if not name:
+            if name:
+                if current_product_data:
+                    products.append(current_product_data)
+                current_product_data = {
+                    'product_data': row,
+                    'images': [{
+                        'Color': row.get('Color'),
+                        'Stock': row.get('Stock (Color)', 0),
+                        'Images': row.get('Images'),
+                        'Image Alt Description': row.get('Image Alt Description')
+                    }]
+                }
+            else:
+                if current_product_data:
+                    current_product_data['images'].append({
+                        'Color': row.get('Color'),
+                        'Stock': row.get('Stock (Color)', 0),
+                        'Images': row.get('Images'),
+                        'Image Alt Description': row.get('Image Alt Description')
+                    })
+        if current_product_data:
+            products.append(current_product_data)
+
+        for p in products:
+            row = p['product_data']
+            category, subcategory, subsubcategory = get_or_create_category_hierarchy(
+                row)
+            # Check if product with same name and subcategory exists
+            if Product.objects.filter(name=row.get('Product Name'), subcategory=subcategory).exists():
                 continue
-
-            category, _ = ProductCategory.objects.get_or_create(
-                name=row.get('Category', '').strip())
-            subcategory, _ = ProductSubCategory.objects.get_or_create(
-                name=row.get('Sub Category', '').strip(), category=category)
-            subsubcategory, _ = ProductSubSubCategory.objects.get_or_create(
-                name=row.get('Sub Sub Category', '').strip(), subcategory=subcategory)
-
-            product = Product.objects.create(
-                name=name,
-                slug=slugify(name),
-                category=category,
-                subcategory=subcategory,
-                subsubcategory=subsubcategory,
-                price=row.get('Price') or 0,
-                market_price=row.get('Market Price') or 0,
-                discount=row.get('Discount') or 0,
-                stock=row.get('Product Stock') or 0,
-                is_popular=str(row.get('Is popular')).lower() == 'true',
-                is_featured=str(row.get('Is featured')).lower() == 'true',
-                description=row.get('Description') or ''
-            )
-
-            sizes = [s.strip()
-                     for s in str(row.get('Size', '')).split(',') if s.strip()]
-            for size in sizes:
-                size_obj, _ = Size.objects.get_or_create(name=size)
-                product.size.add(size_obj)
-
-            img_url = row.get('Images')
-            if img_url:
-                try:
-                    response = requests.get(img_url)
-                    if response.status_code == 200:
-                        image_file = ContentFile(response.content)
-                        image_name = img_url.split('/')[-1]
-                        image_instance = ProductImage.objects.create(
-                            product=product,
-                            color=row.get('Color', ''),
-                            stock=row.get('Stock (Color)', 0),
-                            image_alt_description=row.get(
-                                'Image Alt Description', '')
-                        )
-                        image_instance.image.save(
-                            image_name, image_file, save=True)
-                except Exception as e:
-                    print("Image upload error:", e)
-
+            product = create_product_from_row(
+                row, category, subcategory, subsubcategory)
+            for img in p['images']:
+                create_product_image(product, img)
         return Response({'message': '✅ Products imported successfully!'})
