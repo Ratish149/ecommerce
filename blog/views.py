@@ -4,6 +4,10 @@ from .models import BlogCategory, BlogComment, BlogTag, Blog, Testimonial
 from .serializers import BlogCategorySerializer, BlogCommentSerializer, BlogCommentSmallSerializer, BlogSmallSerializer, BlogTagSerializer, BlogSerializer, TestimonialSerializer
 from django_filters import rest_framework as django_filters
 from rest_framework import filters
+from rest_framework.views import APIView
+from django.shortcuts import get_object_or_404
+from django.db import models
+from rest_framework.response import Response
 
 # Create your views here.
 
@@ -85,6 +89,19 @@ class BlogRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     ).select_related('category').prefetch_related('tags')
     serializer_class = BlogSerializer
     lookup_field = 'slug'
+
+
+class SimilarBlogListView(APIView):
+    def get(self, request, slug):
+        blog = get_object_or_404(Blog, slug=slug)
+        # Get blogs with the same category or overlapping tags, excluding the current blog
+        similar_blogs = Blog.objects.filter(
+            models.Q(category=blog.category) |
+            models.Q(tags__in=blog.tags.all())
+        ).exclude(id=blog.id).distinct()[:4]
+
+        serializer = BlogSmallSerializer(similar_blogs, many=True)
+        return Response(serializer.data)
 
 
 class BlogCommentListCreateView(generics.ListCreateAPIView):

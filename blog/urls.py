@@ -17,6 +17,8 @@ urlpatterns = [
     path('blogs/', views.BlogListCreateView.as_view(), name='blog-list-create'),
     path('blogs/<slug:slug>/', views.BlogRetrieveUpdateDestroyView.as_view(),
          name='blog-retrieve-update-destroy'),
+    path('blogs/<slug:slug>/similar/', views.SimilarBlogListView.as_view(),
+         name='similar-blog-list'),
 
     # Blog Comment URLs
     path('blog/comments/', views.BlogCommentListCreateView.as_view(),
