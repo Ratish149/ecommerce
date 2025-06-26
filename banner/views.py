@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from rest_framework import generics
-from .models import Banner, BannerImage
-from .serializers import BannerSerializer, BannerImageSerializer
+from .models import Banner, BannerImage, PopUp, PopUpForm
+from .serializers import BannerSerializer, BannerImageSerializer, PopUpSerializer, PopUpFormSerializer
 
 # Create your views here.
 
@@ -24,3 +24,23 @@ class BannerListCreateView(generics.ListCreateAPIView):
 class BannerRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Banner.objects.all()
     serializer_class = BannerSerializer
+
+
+class PopUpCreateView(generics.ListCreateAPIView):
+    queryset = PopUp.objects.filter(is_active=True)
+    serializer_class = PopUpSerializer
+
+
+class PopUpRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = PopUp.objects.filter(is_active=True)
+    serializer_class = PopUpSerializer
+
+
+class PopUpFormCreateView(generics.ListCreateAPIView):
+    queryset = PopUpForm.objects.all()
+    serializer_class = PopUpFormSerializer
+
+
+class PopUpFormRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = PopUpForm.objects.all()
+    serializer_class = PopUpFormSerializer
