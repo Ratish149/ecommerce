@@ -34,7 +34,7 @@ class CategorySmallSerializer(serializers.ModelSerializer):
 class CategoryListSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductCategory
-        fields = ['id', 'name', 'slug']
+        fields = ['id', 'name', 'slug', 'description']
 
 
 class SubCategorySerializer(serializers.ModelSerializer):
@@ -53,7 +53,7 @@ class SubCategorySerializer(serializers.ModelSerializer):
 class SubCategoryListSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductSubCategory
-        fields = ['id', 'name', 'slug']
+        fields = ['id', 'name', 'slug', 'description']
 
 
 class SubCategorySmallSerializer(serializers.ModelSerializer):
@@ -73,7 +73,7 @@ class SubCategorySmallSerializer(serializers.ModelSerializer):
 class SubSubCategoryListSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductSubSubCategory
-        fields = ['id', 'name', 'slug',]
+        fields = ['id', 'name', 'slug', 'description']
 
 
 class SubSubCategorySerializer(serializers.ModelSerializer):
