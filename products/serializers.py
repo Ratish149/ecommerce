@@ -23,7 +23,7 @@ class CategorySmallSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProductCategory
-        fields = ['id', 'name', 'slug', 'image']
+        fields = ['id', 'name', 'slug', 'image', 'description']
 
     def get_image(self, obj):
         if obj.image:
@@ -34,7 +34,7 @@ class CategorySmallSerializer(serializers.ModelSerializer):
 class CategoryListSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductCategory
-        fields = ['id', 'name', 'slug', 'description']
+        fields = ['id', 'name', 'slug']
 
 
 class SubCategorySerializer(serializers.ModelSerializer):
@@ -53,7 +53,7 @@ class SubCategorySerializer(serializers.ModelSerializer):
 class SubCategoryListSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductSubCategory
-        fields = ['id', 'name', 'slug', 'description']
+        fields = ['id', 'name', 'slug']
 
 
 class SubCategorySmallSerializer(serializers.ModelSerializer):
@@ -73,7 +73,7 @@ class SubCategorySmallSerializer(serializers.ModelSerializer):
 class SubSubCategoryListSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductSubSubCategory
-        fields = ['id', 'name', 'slug', 'description']
+        fields = ['id', 'name', 'slug',]
 
 
 class SubSubCategorySerializer(serializers.ModelSerializer):

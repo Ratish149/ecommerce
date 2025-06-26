@@ -71,7 +71,7 @@ class SubCategoryFilter(django_filters.FilterSet):
 
 class SubCategoryListCreateView(generics.ListCreateAPIView):
     queryset = ProductSubCategory.objects.only(
-        'id', 'name', 'slug', 'category', 'image').select_related('category')
+        'id', 'name', 'slug', 'category', 'image', 'description').select_related('category')
     serializer_class = SubCategorySerializer
     filter_backends = [django_filters.DjangoFilterBackend]
     filterset_class = SubCategoryFilter
@@ -103,7 +103,7 @@ class SubCategoryRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView
 
 class SubSubCategoryListCreateView(generics.ListCreateAPIView):
     queryset = ProductSubSubCategory.objects.only(
-        'id', 'name', 'slug', 'subcategory', 'image').select_related('subcategory')
+        'id', 'name', 'slug', 'subcategory', 'image', 'description').select_related('subcategory')
     serializer_class = SubSubCategorySerializer
 
     def get_serializer_class(self):
