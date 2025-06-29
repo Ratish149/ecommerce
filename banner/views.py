@@ -27,7 +27,7 @@ class BannerRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class PopUpCreateView(generics.ListCreateAPIView):
-    queryset = PopUp.objects.filter(is_active=True)
+    queryset = PopUp.objects.all()
     serializer_class = PopUpSerializer
 
 
