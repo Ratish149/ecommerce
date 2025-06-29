@@ -32,7 +32,7 @@ class PopUpCreateView(generics.ListCreateAPIView):
 
 
 class PopUpRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = PopUp.objects.filter(is_active=True)
+    queryset = PopUp.objects.filter.all()
     serializer_class = PopUpSerializer
 
 
