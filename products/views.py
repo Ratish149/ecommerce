@@ -298,6 +298,7 @@ class ProductReviewView(generics.ListCreateAPIView):
         'id', 'product', 'user', 'review', 'rating', 'created_at'
     ).select_related('product', 'user').order_by('-created_at')
     serializer_class = ProductReviewSerializer
+    pagination_class = CustomPagination
     filter_backends = [django_filters.DjangoFilterBackend,]
     filterset_class = ProductReviewFilter
 
