@@ -132,7 +132,7 @@ CSRF_TRUSTED_ORIGINS = [
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'ecom',
+        'NAME': 'nishimatsuya',
         'USER': 'ratish',
         'PASSWORD': 'ratish123',
         'HOST': 'localhost',
