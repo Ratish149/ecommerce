@@ -6,16 +6,10 @@ from rest_framework.validators import UniqueTogetherValidator
 
 
 class CategorySerializer(serializers.ModelSerializer):
-    image = serializers.SerializerMethodField()
 
     class Meta:
         model = ProductCategory
         fields = '__all__'
-
-    def get_image(self, obj):
-        if obj.image:
-            return f'/media/{obj.image.name}'
-        return None
 
 
 class CategorySmallSerializer(serializers.ModelSerializer):
